@@ -1,0 +1,104 @@
+diff -Naurp binutils/readelf.c binutils/readelf.c
+--- binutils/readelf.c	2011-11-28 12:09:08.000000000 +0530
++++ binutils/readelf.c	2011-11-28 12:29:17.000000000 +0530
+@@ -572,6 +572,7 @@ guess_is_rela (unsigned int e_machine)
+     case EM_AVR:
+     case EM_AVR32:
+     case EM_AVR_OLD:
++    case EM_AVR32_OLD:
+     case EM_BLACKFIN:
+     case EM_CR16:
+     case EM_CRIS:
+@@ -1032,6 +1033,7 @@ dump_relocations (FILE * file,
+ 	  break;
+ 
+ 	case EM_AVR32:
++	case EM_AVR32_OLD:
+ 	  rtype = elf_avr32_reloc_type (type);
+ 	  break;
+ 
+@@ -2018,6 +2020,7 @@ get_machine_name (unsigned e_machine)
+     case EM_ECOG16:		return "Cyan Technology eCOG16 family";
+     case EM_ETPU:		return "Freescale Extended Time Processing Unit";
+     case EM_SLE9X:		return "Infineon Technologies SLE9X core";
++    case EM_AVR32_OLD:
+     case EM_AVR32:		return "Atmel Corporation 32-bit microprocessor family";
+     case EM_STM8:		return "STMicroeletronics STM8 8-bit microcontroller";
+     case EM_TILE64:		return "Tilera TILE64 multicore architecture family";
+@@ -9839,6 +9842,9 @@ is_32bit_abs_reloc (unsigned int reloc_t
+     case EM_AVR_OLD:
+     case EM_AVR:
+       return reloc_type == 1;
++    case EM_AVR32_OLD:
++    case EM_AVR32:
++      return reloc_type == 1; /* R_AVR32_32 */
+     case EM_ADAPTEVA_EPIPHANY:
+       return reloc_type == 3;
+     case EM_BLACKFIN:
+@@ -10133,6 +10139,9 @@ is_16bit_abs_reloc (unsigned int reloc_t
+     case EM_AVR_OLD:
+     case EM_AVR:
+       return reloc_type == 4; /* R_AVR_16.  */
++    case EM_AVR32_OLD:
++    case EM_AVR32:
++      return reloc_type == 2; /* R_AVR32_16 */
+     case EM_ADAPTEVA_EPIPHANY:
+       return reloc_type == 5;
+     case EM_CYGNUS_D10V:
+diff -Naurp gas/testsuite/gas/avr32/dwarf2.d gas/testsuite/gas/avr32/dwarf2.d
+--- gas/testsuite/gas/avr32/dwarf2.d	2011-11-28 12:17:28.000000000 +0530
++++ gas/testsuite/gas/avr32/dwarf2.d	2011-11-28 12:29:17.000000000 +0530
+@@ -2,17 +2,17 @@
+ #name: dwarf2
+ #source: dwarf2.s
+ 
+-Dump of debug contents of section \.debug_line:
++Raw dump of debug contents of section \.debug_line:
+ 
+-  Length:                      53
++  Offset:                      0x0
++  Length:                      56
+   DWARF Version:               2
+-  Prologue Length:             26
++  Prologue Length:             29
+   Minimum Instruction Length:  1
+   Initial value of 'is_stmt':  1
+   Line Base:                   -5
+   Line Range:                  14
+-  Opcode Base:                 10
+-  \(Pointer size:               4\)
++  Opcode Base:                 13
+ 
+  Opcodes:
+   Opcode 1 has 0 args
+@@ -24,6 +24,9 @@ Dump of debug contents of section \.debu
+   Opcode 7 has 0 args
+   Opcode 8 has 0 args
+   Opcode 9 has 1 args
++  Opcode 10 has 0 args
++  Opcode 11 has 0 args
++  Opcode 12 has 1 args
+ 
+  The Directory Table is empty\.
+ 
+@@ -38,5 +41,7 @@ Dump of debug contents of section \.debu
+   Advance Line by 23 to 111
+   Special opcode .*: advance Address by 4 to 0x4 and Line by 0 to 111
+   Special opcode .*: advance Address by 10 to 0xe and Line by 1 to 112
+-  Advance PC by 530 to 220
++  Advance PC by 530 to 0x220
+   Extended opcode 1: End of Sequence
++
++
+diff -Naurp gas/testsuite/gas/avr32/dwarf2.s gas/testsuite/gas/avr32/dwarf2.s
+--- gas/testsuite/gas/avr32/dwarf2.s	2011-11-28 12:17:28.000000000 +0530
++++ gas/testsuite/gas/avr32/dwarf2.s	2011-11-28 12:29:17.000000000 +0530
+@@ -43,7 +43,7 @@ main:
+ .Letext0:
+ 
+ 	.section .debug_info
+-	.int	.Ledebug_info0 - .Ldebug_info0	// size
++	.int	.Ledebug_info0 - .Ldebug_info0 - 4 // size (length of the .debug_info, not including the length field itself)
+ 	.short	2				// version
+ 	.int	.Ldebug_abbrev0			// abbrev offset
+ 	.byte	4				// bytes per addr

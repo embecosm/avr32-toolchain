@@ -1,0 +1,12 @@
+diff -Naurp bfd/compress.c bfd/compress.c
+--- bfd/compress.c	2011-04-11 09:38:12.000000000 +0530
++++ bfd/compress.c	2011-12-08 17:08:51.000000000 +0530
+@@ -180,7 +180,7 @@ bfd_get_full_section_contents (bfd *abfd
+     case COMPRESS_SECTION_NONE:
+       if (p == NULL)
+ 	{
+-	  p = (bfd_byte *) bfd_malloc (sz);
++	  p = (bfd_byte *) bfd_malloc (sec->rawsize > sec->size ? sec->rawsize : sec->size);
+ 	  if (p == NULL)
+ 	    return FALSE;
+ 	}

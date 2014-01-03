@@ -1,0 +1,361 @@
+diff -Naurp gcc/config/avr32/avr32.c gcc/config/avr32/avr32.c
+--- gcc/config/avr32/avr32.c	2011-02-16 21:29:59.000000000 -0600
++++ gcc/config/avr32/avr32.c	2011-02-16 19:56:54.000000000 -0600
+@@ -188,6 +188,7 @@ const char *avr32_part_name = "none";
+ const struct part_type_s *avr32_part;
+ const struct arch_type_s *avr32_arch;
+ 
++int avr32_emit_fpu_insns = 0;
+ 
+ /* FIXME: needs to use GC.  */
+ struct flashvault_decl_list
+@@ -293,7 +294,11 @@ avr32_override_options (void)
+   /* Enable fast-float library if unsafe math optimizations
+      are used. */
+   if (flag_unsafe_math_optimizations)
++  {
+     target_flags |= MASK_FAST_FLOAT;
++    /* Enable -munsafe-math */
++    target_flags |= MASK_UNSAFE_MATH;
++  }
+ 
+   /* Check if we should set avr32_imm_in_const_pool
+      based on if caches are present or not. */
+@@ -308,6 +313,25 @@ avr32_override_options (void)
+   if (TARGET_NO_PIC)
+     flag_pic = 0;
+   avr32_add_gc_roots ();
++  
++  if (TARGET_ARCH_FPU) /* if the device has FPU (ucr3fp) */
++    {
++      if (TARGET_SOFT_FLOAT)  /* if -msoft-float */
++        avr32_emit_fpu_insns = 0; 
++      else /* if -mhard-float or if not -msoft-float */
++        avr32_emit_fpu_insns = 1;
++    }
++  else 
++    {
++      /* should be soft float regardless of the -mhard/soft-float
++         option */
++      avr32_emit_fpu_insns = 0; 
++      /* warn if -mhard-float is specified */
++      if (TARGET_HARD_FLOAT)
++        fprintf(stderr, 
++                "Warning: Invalid option -mhard-float for the part %s\n",
++                avr32_part_name);
++    }
+ }
+ 
+ 
+diff -Naurp gcc/config/avr32/avr32.h gcc/config/avr32/avr32.h
+--- gcc/config/avr32/avr32.h	2011-02-16 21:29:59.000000000 -0600
++++ gcc/config/avr32/avr32.h	2011-02-16 13:07:11.000000000 -0600
+@@ -269,6 +269,7 @@ struct arch_type_s
+ 
+ extern const struct part_type_s *avr32_part;
+ extern const struct arch_type_s *avr32_arch;
++extern int avr32_emit_fpu_insns;
+ 
+ #define TARGET_SIMD  (avr32_arch->feature_flags & FLAG_AVR32_HAS_SIMD)
+ #define TARGET_DSP  (avr32_arch->feature_flags & FLAG_AVR32_HAS_DSP)
+@@ -286,6 +287,7 @@ extern const struct arch_type_s *avr32_a
+ #define TARGET_UARCH_AVR32A (avr32_arch->uarch_type == UARCH_TYPE_AVR32A)
+ #define TARGET_UARCH_AVR32B (avr32_arch->uarch_type == UARCH_TYPE_AVR32B)
+ #define TARGET_ARCH_FPU (avr32_arch->feature_flags & FLAG_AVR32_HAS_FPU)
++#define TARGET_EMIT_FPU_INSNS (avr32_emit_fpu_insns)
+ 
+ #define CAN_DEBUG_WITHOUT_FP
+ 
+diff -Naurp gcc/config/avr32/avr32.md gcc/config/avr32/avr32.md
+--- gcc/config/avr32/avr32.md	2011-02-16 21:29:59.000000000 -0600
++++ gcc/config/avr32/avr32.md	2011-02-16 15:24:31.000000000 -0600
+@@ -2435,7 +2435,7 @@ switch(GET_MODE(operands[0]))
+ 	(compare:SF
+ 	 (match_operand:SF 0 "general_operand" "")
+ 	 (match_operand:SF 1 "general_operand"  "")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "{
+    if ( !REG_P(operands[0]) )
+      operands[0] = force_reg(SFmode, operands[0]);
+@@ -2729,7 +2729,7 @@ switch(GET_MODE(operands[0]))
+                      (const_int 0)))]
+ ""
+ {
+-  if(TARGET_HARD_FLOAT && TARGET_ARCH_FPU)
++  if(TARGET_EMIT_FPU_INSNS)
+     FAIL;
+ })
+ 
+@@ -2857,14 +2857,14 @@ switch(GET_MODE(operands[0]))
+ 		      (pc)))]
+   ""
+   {
+-    if (TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++    if (TARGET_EMIT_FPU_INSNS && (avr32_branch_type == CMP_SF))
+        return get_attr_length(insn) == 6 ? "brvs .+6\;br<cond> %0" : "brvs .+8\;br<cond> %0";
+     else
+        return "br<cond> %0";
+   }
+   [(set_attr "type" "branch")
+    (set (attr "length")
+-	(if_then_else (eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++	(if_then_else (eq (const_int 1)(symbol_ref "TARGET_EMIT_FPU_INSNS"))
+ 		      (if_then_else 
+ 			   (and (le (minus (match_dup 0) (pc)) (const_int 254))
+ 		    (le (minus (pc) (match_dup 0)) (const_int 256)))
+@@ -2917,14 +2917,14 @@ switch(GET_MODE(operands[0]))
+ 		      (pc)))]
+   ""
+   {
+-	if(TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++	if(TARGET_EMIT_FPU_INSNS && (avr32_branch_type == CMP_SF))
+ 		return "brvs .+8\;br<cond> %l0";
+ 	else
+ 		return "br<cond> %l0";
+   }
+   [(set_attr "type" "branch")
+    (set (attr "length") 
+-    (cond [(eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++    (cond [(eq (const_int 1)(symbol_ref "TARGET_EMIT_FPU_INSNS"))
+ 		       (const_int 8)]
+                (const_int 4)))
+    (set_attr "cc" "none")])
+@@ -2937,14 +2937,14 @@ switch(GET_MODE(operands[0]))
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+   {
+-    if (TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++    if (TARGET_EMIT_FPU_INSNS && (avr32_branch_type == CMP_SF))
+        return "brvs %0\;br<invcond> %0";
+     else
+        return "br<invcond> %0";
+   }
+   [(set_attr "type" "branch")
+    (set (attr "length")
+-	(if_then_else (eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++	(if_then_else (eq (const_int 1)(symbol_ref "TARGET_EMIT_FPU_INSNS"))
+ 		      (if_then_else 
+ 			   (and (le (minus (match_dup 0) (pc)) (const_int 254))
+ 		    (le (minus (pc) (match_dup 0)) (const_int 256)))
+@@ -2997,14 +2997,14 @@ switch(GET_MODE(operands[0]))
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+   {
+-    if (TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++    if (TARGET_EMIT_FPU_INSNS && (avr32_branch_type == CMP_SF))
+        return "brvs %l0\;br<invcond> %l0";
+     else
+        return "br<invcond> %0";
+   }
+   [(set_attr "type" "branch")
+    (set (attr "length") 
+-    (cond [(eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++    (cond [(eq (const_int 1)(symbol_ref "TARGET_EMIT_FPU_INSNS"))
+ 		       (const_int 8)]
+                (const_int 4)))
+    (set_attr "cc" "none")])
+diff -Naurp gcc/config/avr32/avr32.opt gcc/config/avr32/avr32.opt
+--- gcc/config/avr32/avr32.opt	2011-02-16 21:29:59.000000000 -0600
++++ gcc/config/avr32/avr32.opt	2011-02-16 19:57:26.000000000 -0600
+@@ -23,13 +23,17 @@ muse-rodata-section
+ Target Report Mask(USE_RODATA_SECTION)
+ Use section .rodata for read-only data instead of .text.
+ 
++munsafe-math
++Target Report Mask(UNSAFE_MATH)
++Emit UC3 FPU instruction sequences whose results may not comply to IEEE floating point standard. Enabled by default if the -funsafe-math-optimizations switch is specified
++
+ mhard-float
+ Target Report Mask(HARD_FLOAT)
+-Use FPU instructions instead of floating point emulation.
++Emit UC3 FPU instructions instead of using floating point emulation (deprecated)
+ 
+ msoft-float
+-Target Report InverseMask(HARD_FLOAT, SOFT_FLOAT)
+-Use floating point emulation for floating point operations.
++Target Report Mask(SOFT_FLOAT)
++Use software floating point emulation 
+ 
+ mforce-double-align
+ Target Report RejectNegative Mask(FORCE_DOUBLE_ALIGN)
+diff -Naurp gcc/config/avr32/uc3fpu.md gcc/config/avr32/uc3fpu.md
+--- gcc/config/avr32/uc3fpu.md	2011-02-16 21:29:59.000000000 -0600
++++ gcc/config/avr32/uc3fpu.md	2011-02-16 21:09:42.000000000 -0600
+@@ -21,7 +21,7 @@
+ (define_insn "*movsf_uc3fp"
+   [(set (match_operand:SF 0 "nonimmediate_operand"     "=r,r,r,m")
+ 	(match_operand:SF 1 "general_operand"          "r,G,m,r"))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "@
+    mov\t%0, %1
+    mov\t%0, %1
+@@ -34,7 +34,7 @@
+   [(set (match_operand:SF          0 "register_operand" "=r")
+ 	(mult:SF (match_operand:SF 1 "register_operand" "r")
+ 		 (match_operand:SF 2 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fmul.s\t%0, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -43,7 +43,7 @@
+   [(set (match_operand:SF          0 "register_operand" "=r")
+ 	(neg:SF (mult:SF (match_operand:SF 1 "register_operand" "%r")
+                          (match_operand:SF 2 "register_operand" "r"))))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fnmul.s\t%0, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -53,7 +53,7 @@
+ 	(plus:SF (mult:SF (match_operand:SF 1 "register_operand" "r")
+                           (match_operand:SF 2 "register_operand" "r"))
+                  (match_operand:SF 3 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fmac.s\t%0, %3, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -63,7 +63,7 @@
+ ;	(plus:SF  (neg:SF (match_operand:SF 1 "register_operand" "r"))
+ ;                            (mult:SF(match_operand:SF 2 "register_operand" "r")
+ ;                                    (match_operand:SF 3 "register_operand" "r"))))]
+-;  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++;  "TARGET_EMIT_FPU_INSNS"
+ ;  "fnmac.s\t%0, %1, %2, %3"
+ ;  [(set_attr "length" "4")
+ ;   (set_attr "type" "fmul")])
+@@ -73,7 +73,7 @@
+ 	(minus:SF  (mult:SF (match_operand:SF 2 "register_operand" "r")
+                         (match_operand:SF 3 "register_operand" "r"))
+ 	                    (match_operand:SF 1 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fnmac.s\t%0, %1, %2, %3"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -83,7 +83,7 @@
+ 	(minus:SF (match_operand:SF 3 "register_operand" "r")
+ 	          (mult:SF (match_operand:SF 1 "register_operand" "r")
+                        (match_operand:SF 2 "register_operand" "r"))))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fmsc.s\t%0, %3, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -93,7 +93,7 @@
+ 	(minus:SF  (neg:SF (mult:SF (match_operand:SF 1 "register_operand" "r")
+                                     (match_operand:SF 2 "register_operand" "r")))
+                    (match_operand:SF 3 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fnmsc.s\t%0, %3, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -102,7 +102,7 @@
+   [(set (match_operand:SF 0 "register_operand" "=r")
+ 	(plus:SF (match_operand:SF 1 "register_operand" "%r")
+                    (match_operand:SF 2 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fadd.s\t%0, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -111,7 +111,7 @@
+   [(set (match_operand:SF          0 "register_operand" "=r")
+ 	(minus:SF (match_operand:SF 1 "register_operand" "r")
+                   (match_operand:SF 2 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fsub.s\t%0, %1, %2"
+   [(set_attr "length" "4")
+    (set_attr "type" "fmul")])
+@@ -119,28 +119,28 @@
+ (define_insn "fixuns_truncsfsi2"
+   [(set (match_operand:SI 0 "register_operand" "=r")
+ 	(unsigned_fix:SI (match_operand:SF 1 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fcastrs.uw\t%0, %1"
+   [(set_attr "length" "4")])
+ 
+ (define_insn "fix_truncsfsi2"
+   [(set (match_operand:SI 0 "register_operand" "=r")
+ 	(fix:SI (match_operand:SF 1 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fcastrs.sw\t%0, %1"
+   [(set_attr "length" "4")])
+ 
+ (define_insn "floatunssisf2"
+   [(set (match_operand:SF 0 "register_operand" "=r")
+         (unsigned_float:SF (match_operand:SI 1 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fcastuw.s\t%0, %1"
+   [(set_attr "length" "4")])
+ 
+ (define_insn "floatsisf2"
+   [(set (match_operand:SF 0 "register_operand" "=r")
+         (float:SF (match_operand:SI 1 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "fcastsw.s\t%0, %1"
+   [(set_attr "length" "4")])
+ 
+@@ -149,7 +149,7 @@
+         (compare:CC
+          (match_operand:SF 0 "register_operand" "r")
+          (match_operand:SF 1 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   {
+         avr32_branch_type = CMP_SF;
+    if (!rtx_equal_p(cc_prev_status.mdep.value, SET_SRC(PATTERN (insn))) )
+@@ -163,7 +163,7 @@
+   [(set (match_operand:SF 0 "register_operand" "=r")
+ 	(div:SF (match_operand:SF 1 "register_operand" "r")
+ 		 (match_operand:SF 2 "register_operand" "r")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT && flag_unsafe_math_optimizations"
++  "TARGET_EMIT_FPU_INSNS && TARGET_UNSAFE_MATH"
+   "{
+     emit_insn(gen_frcpa_internal(operands[0],operands[2]));
+     emit_insn(gen_mulsf3(operands[0],operands[0],operands[1]));
+@@ -174,14 +174,14 @@
+ (define_insn "frcpa_internal"
+   [(set (match_operand:SF 0 "register_operand" "=r")
+ 	(unspec:SF [(match_operand:SF 1 "register_operand" "r")] UNSPEC_FRCPA))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "frcpa.s %0,%1"
+   [(set_attr "length" "4")])
+ 
+ (define_expand "sqrtsf2"
+   [(set (match_operand:SF 0 "register_operand" "")
+ 	(sqrt:SF (match_operand:SF 1 "register_operand" "")))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT && flag_unsafe_math_optimizations"
++  "TARGET_EMIT_FPU_INSNS && TARGET_UNSAFE_MATH"
+   "
+ {
+   rtx scratch = gen_reg_rtx (SFmode);
+@@ -195,5 +195,5 @@
+   [(set (match_operand:SF 0 "register_operand" "=r")
+ 	(div:SF (match_operand:SF 2 "const_1f_operand" "F")
+ 		(sqrt:SF (match_operand:SF 1 "register_operand" "?r"))))]
+-  "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
++  "TARGET_EMIT_FPU_INSNS"
+   "frsqrta.s %1, %0")
+diff -Naurp gcc/config/avr32/t-avr32 gcc/config/avr32/t-avr32
+--- gcc/config/avr32/t-avr32	2011-02-17 11:48:03.000000000 -0600
++++ gcc/config/avr32/t-avr32	2011-02-16 23:25:25.000000000 -0600
+@@ -79,6 +79,8 @@ MULTILIB_MATCHES     += march?ucr3=mpart
+ 
+ EXTRA_MULTILIB_PARTS = crtbegin.o crtbeginS.o crtend.o crtendS.o crti.o crtn.o
+ 
++MULTILIB_EXTRA_OPTS = msoft-float
++
+ CRTSTUFF_T_CFLAGS = -mrelax
+ CRTSTUFF_T_CFLAGS_S = -mrelax -fPIC
+ TARGET_LIBGCC2_CFLAGS += -mrelax

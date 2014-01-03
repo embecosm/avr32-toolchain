@@ -1,0 +1,77 @@
+2014-02-03  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* .gitignore: Created.
+	* README.md: Added patchbuild details.
+	* SOURCES.README: Created from Atmel distributions.
+	* avr32-versions.sh: Created, based on AVR 8-bit version.
+	* build-all/sh: Created, based on AVR 8-bit version and
+	build-avr32-gnu-toolchain.sh. Still won't build GDB though.
+	* build-avr32-gnu-toolchain.sh: Created from Atmel distributions.
+	* patchbuild.sh: Created.
+	* patches/binutils/200-binutils-avr32-autoconf.patch: Created from
+	Atmel distributions.
+	* patches/binutils/201-binutils-avr32-upgrade-fix.patch: Likewise.
+	* patches/binutils/300-binutils-avr32-bfd.patch: Likewise.
+	* patches/binutils/301-binutils-avr32-binutils.patch: Likewise.
+	* patches/binutils/302-binutils-avr32-gas.patch: Likewise.
+	* patches/binutils/303-binutils-avr32-include.patch: Likewise.
+	* patches/binutils/304-binutils-avr32-ld.patch: Likewise.
+	* patches/binutils/305-binutils-avr32-opcodes.patch: Likewise.
+	* patches/binutils/400-binutils-avr32-fixes.patch: Likewise.
+	* patches/binutils/401-binutils-avr32-fpu.patch: Likewise.
+	* patches/binutils/402-binutils-avr32-bug-7435.patch: Likewise.
+	* patches/binutils/403-binutils-avr32-bug-11979.patch: Likewise.
+	* patches/binutils/404-binutils-avr32-avrtc176.patch: Likewise.
+	* patches/binutils/405-binutils-avr32-bug-avrtc633.patch: Likewise.
+	* patches/binutils/500-binutils-avr32-mxt768e.patch: Likewise.
+	* patches/binutils/501-binutils-avr32-uc3c.patch: Likewise.
+	* patches/binutils/502-binutils-avr32-uc3l0128.patch: Likewise.
+	* patches/binutils/503-binutils-avr32-uc3a4.patch: Likewise.
+	* patches/binutils/504-binutils-avr32-uc3d.patch: Likewise.
+	* patches/binutils/505-binutils-avr32-uc3l3l4.patch: Likewise.
+	* patches/binutils/506-binutils-avr32-mxt1664s-mxt1664eng.patch:
+	Likewise.
+	* patches/binutils/507-binutils-avr32-mxt540e.patch: Likewise.
+	* patches/binutils/508-binutils-avr32-uc128l5.patch: Likewise.
+	* patches/binutils/509-binutils-avr32-mxt2952t.patch: Likewise.
+	* patches/gcc/00-gcc-avr32-avrtc661.patch: Likewise.
+	* patches/gcc/30-gcc-avr32.patch: Likewise.
+	* patches/gcc/31-gcc-avr32-rmw.patch: Likewise.
+	* patches/gcc/32-gcc-avr32-sleep-builtin.patch: Likewise.
+	* patches/gcc/33-gcc-avr32-ucr3fp.patch: Likewise.
+	* patches/gcc/34-gcc-avr32-fpu.patch: Likewise.
+	* patches/gcc/35-gcc-avr32-delay-cycles.patch: Likewise.
+	* patches/gcc/36-gcc-avr32-list-devices.patch: Likewise.
+	* patches/gcc/40-gcc-avr32-fpemul-fixes.patch: Likewise.
+	* patches/gcc/41-gcc-avr32-fix-const_int_addr.patch: Likewise.
+	* patches/gcc/42-gcc-avr32-fix-reorg_opt_bug11763.patch: Likewise.
+	* patches/gcc/43-gcc-avr32-4_4_3-upgrade.patch: Likewise.
+	* patches/gcc/44-gcc-avr32-bug-12671.patch: Likewise.
+	* patches/gcc/45-gcc-avr32-bug-7435.patch: Likewise.
+	* patches/gcc/46-gcc-avr32-bug-9675.patch: Likewise.
+	* patches/gcc/47-gcc-avr32-bug-12477.patch: Likewise.
+	* patches/gcc/48-gcc-avr32-fix-AVRTC239-AVRTC200.patch: Likewise.
+	* patches/gcc/49-gcc-avr32-f64.patch: Likewise.
+	* patches/gcc/50-gcc-avr32-mxt768e.patch: Likewise.
+	* patches/gcc/51-gcc-avr32-uc3c.patch: Likewise.
+	* patches/gcc/52-gcc-avr32-uc3l0128.patch: Likewise.
+	* patches/gcc/53-gcc-avr32-uc3a4.patch: Likewise.
+	* patches/gcc/54-gcc-avr32-uc3d.patch: Likewise.
+	* patches/gcc/55-gcc-avr32-uc3l3l4u.patch: Likewise.
+	* patches/gcc/56-gcc-avr32-atmxt1664s-atmxt1664eng.patch: Likewise.
+	* patches/gcc/57-gcc-avr32-mxt540e.patch: Likewise.
+	* patches/gcc/58-gcc-avr32-uc128l5.patch: Likewise.
+	* patches/gcc/59-gcc-avr32-mxt2952t.patch: Likewise.
+	* patches/gdb/10-gdb-6.7.1-avr32-atmel-version.patch: Likewise.
+	* patches/gdb/30-gdb-6.7.1-avr32.patch: Likewise.
+	* patches/gdb/31-gdb-6.7.1-avr32-bfd.patch: Likewise.
+	* patches/gdb/32-gdb-6.7.1-avr32-opcodes.patch: Likewise.
+	* patches/newlib/10-newlib-avr32-atmel-version.patch: Likewise.
+	* patches/newlib/30-newlib-avr32.patch: Likewise.
+	* patches/newlib/31-newlib-avr32-flashvault.patch: Likewise.
+
+2014-02-03  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	Initial commit
+
+	* README.md: Created.

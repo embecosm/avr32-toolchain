@@ -1,0 +1,55 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-02 13:25:42.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-02 13:25:55.000000000 -0600
+@@ -133,6 +133,7 @@
+   {"uc3c1512crevc",   PART_TYPE_AVR32_UC3C1512CREVC,   ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C1512CREVC__"},
+   {"uc3c2512crevc",   PART_TYPE_AVR32_UC3C2512CREVC,   ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C2512CREVC__"},
+   {"uc3l0256",        PART_TYPE_AVR32_UC3L0256,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L0256__"},
++  {"uc3l0128",        PART_TYPE_AVR32_UC3L0128,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L0128__"},
+   {"uc3l064",         PART_TYPE_AVR32_UC3L064,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064__"},
+   {"uc3l032",         PART_TYPE_AVR32_UC3L032,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L032__"},
+   {"uc3l016",         PART_TYPE_AVR32_UC3L016,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L016__"},
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-02 13:25:42.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-02 13:25:55.000000000 -0600
+@@ -186,6 +186,7 @@
+   PART_TYPE_AVR32_UC3C1512CREVC,
+   PART_TYPE_AVR32_UC3C2512CREVC,
+   PART_TYPE_AVR32_UC3L0256,
++  PART_TYPE_AVR32_UC3L0128,
+   PART_TYPE_AVR32_UC3L064,
+   PART_TYPE_AVR32_UC3L032,
+   PART_TYPE_AVR32_UC3L016,
+diff -Naur ./gcc/config/avr32/t-avr32 ./gcc/config/avr32/t-avr32
+--- ./gcc/config/avr32/t-avr32	2010-12-02 13:25:42.000000000 -0600
++++ ./gcc/config/avr32/t-avr32	2010-12-02 13:25:55.000000000 -0600
+@@ -62,6 +62,7 @@
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1512crevc
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2512crevc
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l0256
++MULTILIB_MATCHES     += march?ucr3=mpart?uc3l0128
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+diff -Naur ./gcc/config/avr32/t-avr32-linux ./gcc/config/avr32/t-avr32-linux
+--- ./gcc/config/avr32/t-avr32-linux	2010-12-02 13:25:42.000000000 -0600
++++ ./gcc/config/avr32/t-avr32-linux	2010-12-02 13:25:55.000000000 -0600
+@@ -62,6 +62,7 @@
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1512crevc
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2512crevc
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l0256
++MULTILIB_MATCHES     += march?ucr3=mpart?uc3l0128
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+diff -Naur ./gcc/doc/invoke.texi ./gcc/doc/invoke.texi
+--- ./gcc/doc/invoke.texi	2010-12-02 13:25:42.000000000 -0600
++++ ./gcc/doc/invoke.texi	2010-12-02 13:25:55.000000000 -0600
+@@ -9417,6 +9417,7 @@
+ @samp{uc3c1512crevc},
+ @samp{uc3c2512crevc},
+ @samp{uc3l0256},
++@samp{uc3l0128},
+ @samp{uc3l064},
+ @samp{uc3l032},
+ @samp{uc3l016},

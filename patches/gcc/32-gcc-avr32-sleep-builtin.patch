@@ -1,0 +1,87 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-02 11:56:23.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-02 11:58:13.000000000 -0600
+@@ -1100,6 +1100,7 @@
+   def_builtin ("__builtin_mems", void_ftype_ptr_int, AVR32_BUILTIN_MEMS);
+   def_builtin ("__builtin_memt", void_ftype_ptr_int, AVR32_BUILTIN_MEMT);
+   def_builtin ("__builtin_memc", void_ftype_ptr_int, AVR32_BUILTIN_MEMC);
++  def_builtin ("__builtin_sleep", void_ftype_int, AVR32_BUILTIN_SLEEP);
+ 
+   /* Add all builtins that are more or less simple operations on two
+      operands.  */
+@@ -1881,6 +1882,35 @@
+          return op0;
+        }
+        
++     case AVR32_BUILTIN_SLEEP:
++       {
++ 	arg0 = CALL_EXPR_ARG (exp, 0);
++ 	op0  = expand_normal (arg0);
++ 	int intval = INTVAL(op0);
++ 
++ 	/* Check if the argument if integer and if the value of integer
++ 	   is greater than 0. */ 
++ 	 
++ 	if (!CONSTANT_P (op0))
++         error ("Parameter 1 to __builtin_sleep() is not a valid integer.");
++ 	if (intval < 0 )
++ 	     error ("Parameter 1 to __builtin_sleep() should be an integer greater than 0.");
++ 
++         int strncmpval = strncmp (avr32_part_name,"uc3l", 4);
++  
++ 	/* Check if op0 is less than 7 for uc3l* and less than 6 for other
++ 	   devices. By this check we are avoiding if operand is less than  
++ 	   256. For more devices, add more such checks. */
++ 	 
++ 	if ( strncmpval == 0 && intval >= 7)  
++        error ("Parameter 1 to __builtin_sleep() should be less than or equal to 7.");
++ 	else if ( strncmp != 0 && intval >= 6)
++ 	    error ("Parameter 1 to __builtin_sleep() should be less than or equal to 6.");
++ 
++ 	emit_insn (gen_sleep(op0));
++ 	return target;
++ 
++       }	
+     }
+ 
+   for (i = 0, d = bdesc_2arg; i < ARRAY_SIZE (bdesc_2arg); i++, d++)
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-02 11:56:23.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-02 11:58:13.000000000 -0600
+@@ -3301,7 +3301,8 @@
+   AVR32_BUILTIN_SATRNDU,
+   AVR32_BUILTIN_MEMS,
+   AVR32_BUILTIN_MEMC,
+-  AVR32_BUILTIN_MEMT
++  AVR32_BUILTIN_MEMT,
++  AVR32_BUILTIN_SLEEP
+ };
+ 
+ 
+diff -Naur ./gcc/config/avr32/avr32.md ./gcc/config/avr32/avr32.md
+--- ./gcc/config/avr32/avr32.md	2010-12-02 11:56:23.000000000 -0600
++++ ./gcc/config/avr32/avr32.md	2010-12-02 11:58:14.000000000 -0600
+@@ -94,6 +94,7 @@
+    (VUNSPEC_FRS                       27)
+    (VUNSPEC_CSRF                      28)
+    (VUNSPEC_SSRF                      29)
++   (VUNSPEC_SLEEP                     30)
+    ])
+ 
+ (define_constants
+@@ -3879,6 +3880,15 @@
+    (set_attr "length" "4")]
+   )
+ 
++(define_insn "sleep"
++  [(unspec_volatile [(const_int 0)] VUNSPEC_SLEEP)
++  (match_operand:SI 0 "const_int_operand" "")]
++  ""
++  "sleep	%0"
++  [(set_attr "length" "1")
++   (set_attr "cc"  "none")
++  ])
++
+ ;; Special patterns for dealing with the constant pool
+ 
+ (define_insn "align_4"

@@ -1,0 +1,12 @@
+diff -Naurp opcodes/avr32-opc.c opcodes/avr32-opc.c
+--- opcodes/avr32-opc.c	2013-02-19 16:53:54.000000000 +0530
++++ opcodes/avr32-opc.c	2013-02-19 16:56:49.000000000 +0530
+@@ -5129,7 +5129,7 @@ const struct avr32_alias avr32_alias_tab
+ const struct avr32_syntax avr32_syntax_table[] =
+   {
+     SYNTAX_NORMAL1(ABS, ABS, ABS, INTREG, AVR32_V1),
+-    SYNTAX_NORMAL1(ACALL, ACALL, ACALL, UNSIGNED_CONST_W, AVR32_V1),
++    SYNTAX_NORMAL1(ACALL, ACALL, ACALL, UNSIGNED_CONST, AVR32_V1),
+     SYNTAX_NORMAL1(ACR, ACR, ACR, INTREG,AVR32_V1),
+     SYNTAX_NORMAL3(ADC, ADC, ADC, INTREG, INTREG, INTREG, AVR32_V1),
+     SYNTAX_NORMAL_C2(ADD1, ADD, ADD1, ADD2, INTREG, INTREG, AVR32_V1),

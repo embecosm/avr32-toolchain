@@ -1,0 +1,30 @@
+diff -Naurp binutils/readelf.c binutils/readelf.c
+--- binutils/readelf.c	2011-09-22 02:19:13.000000000 +0530
++++ binutils/readelf.c	2011-11-28 12:07:49.000000000 +0530
+@@ -98,6 +98,7 @@
+ #include "elf/arc.h"
+ #include "elf/arm.h"
+ #include "elf/avr.h"
++#include "elf/avr32.h"
+ #include "elf/bfin.h"
+ #include "elf/cr16.h"
+ #include "elf/cris.h"
+@@ -569,6 +570,7 @@ guess_is_rela (unsigned int e_machine)
+     case EM_ALPHA:
+     case EM_ALTERA_NIOS2:
+     case EM_AVR:
++    case EM_AVR32:
+     case EM_AVR_OLD:
+     case EM_BLACKFIN:
+     case EM_CR16:
+@@ -1029,6 +1031,10 @@ dump_relocations (FILE * file,
+ 	  rtype = elf_avr_reloc_type (type);
+ 	  break;
+ 
++	case EM_AVR32:
++	  rtype = elf_avr32_reloc_type (type);
++	  break;
++
+ 	case EM_OLD_SPARCV9:
+ 	case EM_SPARC32PLUS:
+ 	case EM_SPARCV9:

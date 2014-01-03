@@ -1,0 +1,235 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-03 12:00:22.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-03 12:02:53.000000000 -0600
+@@ -213,7 +213,7 @@
+ 
+   /* Enable section anchors if optimization is enabled. */
+   if (level > 0 || size)
+-    flag_section_anchors = 1;
++    flag_section_anchors = 2;
+ }
+ 
+ 
+@@ -2408,12 +2408,12 @@
+ 	size_str[2] = '\0';
+ 	const_size = atoi (size_str);
+ 
+-	if (toupper (str[1]) == 'U')
++	if (TOUPPER (str[1]) == 'U')
+ 	  {
+ 	    min_value = 0;
+ 	    max_value = (1 << const_size) - 1;
+ 	  }
+-	else if (toupper (str[1]) == 'S')
++	else if (TOUPPER (str[1]) == 'S')
+ 	  {
+ 	    min_value = -(1 << (const_size - 1));
+ 	    max_value = (1 << (const_size - 1)) - 1;
+@@ -2506,7 +2506,7 @@
+ 
+       /* Make sure that the GOT register is pushed. */
+       if (max_reg >= ASM_REGNUM (PIC_OFFSET_TABLE_REGNUM)
+-	  && current_function_uses_pic_offset_table)
++	  && crtl->uses_pic_offset_table)
+ 	save_reg_mask |= (1 << ASM_REGNUM (PIC_OFFSET_TABLE_REGNUM));
+ 
+     }
+@@ -2522,7 +2522,7 @@
+ 	  save_reg_mask |= (1 << reg);
+ 
+       /* Make sure that the GOT register is pushed. */
+-      if (current_function_uses_pic_offset_table)
++      if (crtl->uses_pic_offset_table)
+ 	save_reg_mask |= (1 << ASM_REGNUM (PIC_OFFSET_TABLE_REGNUM));
+ 
+ 
+@@ -2550,7 +2550,7 @@
+         || !current_function_is_leaf
+         || (optimize_size
+         && save_reg_mask
+-        && !current_function_calls_eh_return)
++        && !crtl->calls_eh_return)
+           || frame_pointer_needed)
+           && !IS_FLASHVAULT (func_type))
+ 	{
+@@ -2559,7 +2559,7 @@
+ 	         calls __builtin_eh_return, since we need to
+ 	         fix the SP after the restoring of the registers
+ 	         and before returning. */
+-	      || current_function_calls_eh_return)
++	      || crtl->calls_eh_return)
+ 	    {
+ 	      /* Push/Pop LR */
+ 	      save_reg_mask |= (1 << ASM_REGNUM (LR_REGNUM));
+@@ -2574,7 +2574,7 @@
+ 
+ 
+   /* Save registers so the exception handler can modify them.  */
+-  if (current_function_calls_eh_return)
++  if (crtl->calls_eh_return)
+     {
+       unsigned int i;
+ 
+@@ -2634,7 +2634,7 @@
+     return 0;
+ 
+   /* Must adjust the stack for vararg functions. */
+-  if (current_function_args_info.uses_anonymous_args)
++  if (crtl->args.info.uses_anonymous_args)
+     return 0;
+ 
+   /* If there a stack adjstment.  */
+@@ -2728,16 +2728,16 @@
+ 
+ 
+   fprintf (f, "\t# args = %i, frame = %li, pretend = %i\n",
+-           current_function_args_size, frame_size,
+-           current_function_pretend_args_size);
++           crtl->args.size, frame_size,
++           crtl->args.pretend_args_size);
+ 
+   fprintf (f, "\t# frame_needed = %i, leaf_function = %i\n",
+            frame_pointer_needed, current_function_is_leaf);
+ 
+   fprintf (f, "\t# uses_anonymous_args = %i\n",
+-           current_function_args_info.uses_anonymous_args);
++           crtl->args.info.uses_anonymous_args);
+ 
+-  if (current_function_calls_eh_return)
++  if (crtl->calls_eh_return)
+     fprintf (f, "\t# Calls __builtin_eh_return.\n");
+ 
+ }
+@@ -3346,7 +3346,7 @@
+     }
+ 
+   /* Stack adjustment for exception handler.  */
+-  if (current_function_calls_eh_return)
++  if (crtl->calls_eh_return)
+     fprintf (f, "\tadd\tsp, r%d\n", ASM_REGNUM (EH_RETURN_STACKADJ_REGNO));
+ 
+ 
+@@ -3883,7 +3883,7 @@
+          set. This is because this function is also used if
+          TARGET_HAS_ASM_ADDR_PSEUDOS is set. */
+       if (flag_pic)
+-	current_function_uses_pic_offset_table = 1;
++	crtl->uses_pic_offset_table = 1;
+ 
+       /* Put a REG_EQUAL note on this insn, so that it can be optimized by
+          loop.  */
+@@ -3947,7 +3947,7 @@
+   rtx l1, pic_tmp;
+   rtx global_offset_table;
+ 
+-  if ((current_function_uses_pic_offset_table == 0) || TARGET_NO_INIT_GOT)
++  if ((crtl->uses_pic_offset_table == 0) || TARGET_NO_INIT_GOT)
+     return;
+ 
+   if (!flag_pic)
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-03 11:44:32.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-03 12:02:53.000000000 -0600
+@@ -1131,6 +1131,19 @@
+ */
+ #define REGNO_OK_FOR_BASE_P(NUM)  TEST_REGNO(NUM, <=, LAST_REGNUM)
+ 
++/* The following macro defines cover classes for Integrated Register
++   Allocator.  Cover classes is a set of non-intersected register
++   classes covering all hard registers used for register allocation
++   purpose.  Any move between two registers of a cover class should be
++   cheaper than load or store of the registers.  The macro value is
++   array of register classes with LIM_REG_CLASSES used as the end
++   marker.  */
++
++#define IRA_COVER_CLASSES               \
++{                                       \
++  GENERAL_REGS, LIM_REG_CLASSES         \
++}
++
+ /*
+ A C expression which is nonzero if register number NUM is
+ suitable for use as an index register in operand addresses.  It may be
+@@ -1574,7 +1587,7 @@
+ fixed register.  See FIXED_REGISTERS for more information.
+ */
+ /* We need the frame pointer when compiling for profiling */
+-#define FRAME_POINTER_REQUIRED (current_function_profile)
++#define FRAME_POINTER_REQUIRED (crtl->profile)
+ 
+ /*
+ A C statement to store in the variable DEPTH_VAR the difference
+@@ -2435,7 +2448,7 @@
+ the default; other values are interpreted relative to that.
+ */
+   /* Try to use conditionals as much as possible */
+-#define BRANCH_COST (TARGET_BRANCH_PRED ? 3 : 4)
++#define BRANCH_COST(speed_p, predictable_p) (TARGET_BRANCH_PRED ? 3 : 4)
+ 
+ /*A C expression for the maximum number of instructions to execute via conditional
+   execution instructions instead of a branch. A value of BRANCH_COST+1 is the default
+@@ -3138,7 +3151,7 @@
+ #define CTZ_DEFINED_VALUE_AT_ZERO(mode, value) \
+   (value = 32, (mode == SImode))
+ 
+-#define UNITS_PER_SIMD_WORD UNITS_PER_WORD
++#define UNITS_PER_SIMD_WORD(mode) UNITS_PER_WORD
+ 
+ #define STORE_FLAG_VALUE 1
+ 
+diff -Naur ./gcc/config/avr32/avr32.md ./gcc/config/avr32/avr32.md
+--- ./gcc/config/avr32/avr32.md	2010-12-03 11:44:32.000000000 -0600
++++ ./gcc/config/avr32/avr32.md	2010-12-03 12:02:53.000000000 -0600
+@@ -496,7 +496,7 @@
+                                             (can_create_pseudo_p () ? 0: operands[0]));
+     else if ( flag_pic && avr32_address_operand(operands[1], GET_MODE(operands[1])) )
+       /* If we have an address operand then this function uses the pic register. */
+-      current_function_uses_pic_offset_table = 1;
++      crtl->uses_pic_offset_table = 1;
+   })
+ 
+ 
+@@ -3043,7 +3043,7 @@
+        /* We must however mark the function as using the GOT if flag_pic is set, since the call insn might turn into a mcall using the GOT ptr register. */
+        if (flag_pic)
+        {
+-          current_function_uses_pic_offset_table = 1;
++          crtl->uses_pic_offset_table = 1;
+           emit_call_insn(gen_call_internal(call_address, operands[1]));
+           DONE;
+        }
+@@ -3052,7 +3052,7 @@
+     {
+       if (flag_pic && GET_CODE(call_address) == SYMBOL_REF )
+       {
+-        current_function_uses_pic_offset_table = 1;
++        crtl->uses_pic_offset_table = 1;
+         emit_call_insn(gen_call_internal(call_address, operands[1]));
+         DONE;
+       }
+@@ -3108,14 +3108,14 @@
+           flag_pic is set, since the call insn might turn into
+           a mcall using the GOT ptr register. */
+        if ( flag_pic ) {
+-          current_function_uses_pic_offset_table = 1;
++          crtl->uses_pic_offset_table = 1;
+           emit_call_insn(gen_call_value_internal(operands[0], call_address, operands[2]));
+           DONE;
+        }
+     } else {
+       if ( flag_pic &&
+            GET_CODE(call_address) == SYMBOL_REF ){
+-        current_function_uses_pic_offset_table = 1;
++        crtl->uses_pic_offset_table = 1;
+         emit_call_insn(gen_call_value_internal(operands[0], call_address, operands[2]));
+         DONE;
+       }
+@@ -3352,7 +3352,7 @@
+       operands[0] = legitimize_pic_address (operands[0], SImode, 0);
+     else if ( flag_pic && avr32_address_operand(operands[0], GET_MODE(operands[0])) )
+       /* If we have an address operand then this function uses the pic register. */
+-      current_function_uses_pic_offset_table = 1;
++      crtl->uses_pic_offset_table = 1;
+   })
+ 
+ 

@@ -1,0 +1,60 @@
+diff -Naurp gas/config/tc-avr32.c gas/config/tc-avr32.c
+--- gas/config/tc-avr32.c	2012-03-20 17:20:06.000000000 +0530
++++ gas/config/tc-avr32.c	2012-03-20 18:25:52.000000000 +0530
+@@ -98,6 +98,8 @@ static struct avr32_insn current_insn;
+ /* The target specific pseudo-ops we support. */
+ static void s_rseg (int);
+ static void s_cpool(int);
++static void s_avr32_lcomm(int);
++static symbolS * s_avr32_lcomm_internal (int, symbolS*, addressT);
+ 
+ const pseudo_typeS md_pseudo_table[] =
+ {
+@@ -107,7 +109,7 @@ const pseudo_typeS md_pseudo_table[] =
+   { "loc", dwarf2_directive_loc, 0 },
+ 
+   /* .lcomm requires an explicit alignment parameter */
+-  { "lcomm", s_lcomm, 1 },
++  { "lcomm", s_avr32_lcomm, 1 },
+ 
+   /* AVR32-specific pseudo-ops */
+   { "cpool", s_cpool, 0},
+@@ -4838,5 +4840,38 @@ s_rseg (int value ATTRIBUTE_UNUSED)
+   record_alignment (now_seg, align - OCTETS_PER_BYTE_POWER);
+ }
+ 
++static void s_avr32_lcomm(int needs_align)
++{
++  s_comm_internal (needs_align, s_avr32_lcomm_internal);
++}
++
++/* Called from s_comm_internal after symbol name and size have been
++   parsed. This function parses 3rd argument 'alignment' if present.
++   This function is similar to s_lcomm_internal in gas/read.c but 
++   the alignment string is allowed to be optional.
++   - assembly program may have .lcomm directive with/ without 
++     alignment argument
++   - avr32-gcc may generate .lcomm with alignment (3rd) argument. */
++static symbolS *
++s_avr32_lcomm_internal (int needs_align, symbolS *symbolP, addressT size)
++{
++  addressT align = 0;
++
++  SKIP_WHITESPACE ();
++
++  if (needs_align && *input_line_pointer == ',')
++    {
++      align = parse_align (needs_align - 1);
++      if (align == (addressT) -1)
++        return NULL;
++    }
++  else
++    /* Assume some objects may require alignment on some systems.  */
++    TC_IMPLICIT_LCOMM_ALIGNMENT (size, align);
++
++  bss_alloc (symbolP, size, align);
++  return symbolP;
++}
++
+ /* vim: syntax=c sw=2
+  */

@@ -1,0 +1,45 @@
+diff -Naurp gcc/config/avr32/avr32.c gcc/config/avr32/avr32.c
+--- gcc/config/avr32/avr32.c	2011-02-07 16:05:13.000000000 -0600
++++ gcc/config/avr32/avr32.c	2011-02-07 16:11:04.000000000 -0600
+@@ -425,6 +425,30 @@ need agree with that used by other compi
+ #undef TARGET_SECONDARY_RELOAD
+ #define TARGET_SECONDARY_RELOAD avr32_secondary_reload
+ 
++
++/*
++ * Defining the option, -mlist-devices to list the devices supported by gcc.
++ * This option should be used while printing target-help to list all the 
++ * supported devices.
++ */
++#undef TARGET_HELP
++#define TARGET_HELP avr32_target_help
++
++void avr32_target_help ()
++{
++  if (avr32_list_supported_parts)
++    {
++      const struct part_type_s *list;
++      fprintf (stdout, "List of parts supported by avr32-gcc:\n");
++      for (list = avr32_part_types; list->name; list++)
++        {
++          if (strcmp("none", list->name) != 0)
++            fprintf (stdout, "%-20s%s\n", list->name, list->macro);
++        }
++      fprintf (stdout, "\n\n");
++    }
++}
++
+ enum reg_class
+ avr32_secondary_reload (bool in_p, rtx x, enum reg_class class,
+                         enum machine_mode mode, secondary_reload_info *sri)
+diff -Naurp gcc/config/avr32/avr32.opt gcc/config/avr32/avr32.opt
+--- gcc/config/avr32/avr32.opt	2011-02-07 16:05:13.000000000 -0600
++++ gcc/config/avr32/avr32.opt	2011-02-07 16:07:37.000000000 -0600
+@@ -87,3 +87,7 @@ gcc can safely generate these whenever p
+ mflashvault
+ Target Var(TARGET_FLASHVAULT)
+ Generate code for flashvault
++
++mlist-devices
++Target RejectNegative Var(avr32_list_supported_parts)
++Print the list of parts supported while printing --target-help.

@@ -1,0 +1,12 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-03 11:44:32.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-03 11:59:09.000000000 -0600
+@@ -4143,7 +4143,7 @@
+     case REG:
+       return avr32_address_register_rtx_p (x, strict);
+     case CONST_INT:
+-      return ((mode==SImode) 
++      return ((mode==SImode) && TARGET_RMW_ADDRESSABLE_DATA
+               && CONST_OK_FOR_CONSTRAINT_P(INTVAL(x), 'K', "Ks17"));
+     case CONST:
+       {

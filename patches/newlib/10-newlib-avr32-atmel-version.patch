@@ -1,0 +1,12 @@
+diff -Naur newlib/acinclude.m4 newlib/acinclude.m4.orig
+--- newlib/acinclude.m4.orig	2009-11-08 22:26:22.921875000 -0700
++++ newlib/acinclude.m4	2009-11-08 22:26:14.171875000 -0700
+@@ -2,7 +2,7 @@ dnl This provides configure definitions 
+ dnl configure.in files.
+ 
+ AC_DEFUN([DEF_NEWLIB_VERSION],
+-m4_define([NEWLIB_VERSION],[1.16.0]))
++m4_define([NEWLIB_VERSION],[1.16.0.atmel.1.1.0]))
+ 
+ dnl Basic newlib configury.  This calls basic introductory stuff,
+ dnl including AM_INIT_AUTOMAKE and AC_CANONICAL_HOST.  It also runs

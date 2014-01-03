@@ -1,0 +1,823 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-02 11:52:56.000000000 -0600
+@@ -297,7 +297,6 @@
+ 
+   if (TARGET_NO_PIC)
+     flag_pic = 0;
+-
+   avr32_add_gc_roots ();
+ }
+ 
+@@ -381,6 +380,9 @@
+ #undef TARGET_RETURN_IN_MSB
+ #define TARGET_RETURN_IN_MSB avr32_return_in_msb
+ 
++#undef TARGET_ENCODE_SECTION_INFO
++#define TARGET_ENCODE_SECTION_INFO avr32_encode_section_info
++
+ #undef TARGET_ARG_PARTIAL_BYTES
+ #define TARGET_ARG_PARTIAL_BYTES avr32_arg_partial_bytes
+ 
+@@ -416,8 +418,24 @@
+ 
+ #undef  TARGET_MAX_ANCHOR_OFFSET
+ #define TARGET_MAX_ANCHOR_OFFSET ((1 << 15) - 1)
++#undef TARGET_SECONDARY_RELOAD
++#define TARGET_SECONDARY_RELOAD avr32_secondary_reload
++
++enum reg_class
++avr32_secondary_reload (bool in_p, rtx x, enum reg_class class,
++                        enum machine_mode mode, secondary_reload_info *sri)
++{
+ 
++  if ( avr32_rmw_memory_operand (x, mode) )
++    {
++      if (!in_p)
++        sri->icode = CODE_FOR_reload_out_rmw_memory_operand;
++      else
++        sri->icode = CODE_FOR_reload_in_rmw_memory_operand;
++    }
++  return NO_REGS;
+ 
++}
+ /*
+  * Switches to the appropriate section for output of constant pool
+  * entry x in mode. You can assume that x is some kind of constant in
+@@ -659,6 +677,7 @@
+   {"interrupt", 0, 1, false, false, false, avr32_handle_isr_attribute},
+   {"acall", 0, 1, false, true, true, avr32_handle_acall_attribute},
+   {"naked", 0, 0, true, false, false, avr32_handle_fndecl_attribute},
++  {"rmw_addressable", 0, 0, true, false, false, NULL},
+   {"flashvault", 0, 1, true, false, false, avr32_handle_fndecl_attribute},
+   {"flashvault_impl", 0, 1, true, false, false, avr32_handle_fndecl_attribute},
+   {NULL, 0, 0, false, false, false, NULL}
+@@ -1078,6 +1097,9 @@
+ 	       AVR32_BUILTIN_MACWH_D);
+   def_builtin ("__builtin_machh_d", longlong_ftype_longlong_short_short,
+ 	       AVR32_BUILTIN_MACHH_D);
++  def_builtin ("__builtin_mems", void_ftype_ptr_int, AVR32_BUILTIN_MEMS);
++  def_builtin ("__builtin_memt", void_ftype_ptr_int, AVR32_BUILTIN_MEMT);
++  def_builtin ("__builtin_memc", void_ftype_ptr_int, AVR32_BUILTIN_MEMC);
+ 
+   /* Add all builtins that are more or less simple operations on two
+      operands.  */
+@@ -1809,6 +1831,56 @@
+ 	return target;
+       }
+ 
++     case AVR32_BUILTIN_MEMS:
++     case AVR32_BUILTIN_MEMC:
++     case AVR32_BUILTIN_MEMT:
++       {
++         if (!TARGET_RMW)
++           error ("Trying to use __builtin_mem(s/c/t) when target does not support RMW insns.");
++         
++         switch (fcode) {
++         case AVR32_BUILTIN_MEMS:
++           icode = CODE_FOR_iorsi3;
++           break;
++         case AVR32_BUILTIN_MEMC:
++           icode = CODE_FOR_andsi3;
++           break;
++         case AVR32_BUILTIN_MEMT:
++           icode = CODE_FOR_xorsi3;
++           break;
++         }
++			arg0 = CALL_EXPR_ARG (exp,0);
++			arg1 = CALL_EXPR_ARG (exp,1);
++         op0 = expand_expr (arg0, NULL_RTX, VOIDmode, 0);
++         if ( GET_CODE (op0) == SYMBOL_REF )
++           // This symbol must be RMW addressable
++           SYMBOL_REF_FLAGS (op0) |= (1 << SYMBOL_FLAG_RMW_ADDR_SHIFT);
++         op0 = gen_rtx_MEM(SImode, op0);
++         op1 = expand_expr (arg1, NULL_RTX, VOIDmode, 0);
++         mode0 = insn_data[icode].operand[1].mode;
++         
++         
++         if (!(*insn_data[icode].operand[1].predicate) (op0, mode0))
++           {
++             error ("Parameter 1 to __builtin_mem(s/c/t) must be a Ks15<<2 address or a rmw addressable symbol.");
++           }
++         
++         if ( !CONST_INT_P (op1)
++              || INTVAL (op1) > 31
++              || INTVAL (op1) < 0 )
++           error ("Parameter 2 to __builtin_mem(s/c/t) must be a constant between 0 and 31.");
++ 
++         if ( fcode == AVR32_BUILTIN_MEMC )
++           op1 = GEN_INT((~(1 << INTVAL(op1)))&0xffffffff);
++         else
++           op1 = GEN_INT((1 << INTVAL(op1))&0xffffffff);
++         pat = GEN_FCN (icode) (op0, op0, op1);
++         if (!pat)
++           return 0;
++         emit_insn (pat);
++         return op0;
++       }
++       
+     }
+ 
+   for (i = 0, d = bdesc_2arg; i < ARRAY_SIZE (bdesc_2arg); i++, d++)
+@@ -2292,6 +2364,13 @@
+       return avr32_mask_upper_bits_operand (GEN_INT (value), VOIDmode);
+     case 'J':
+       return avr32_hi16_immediate_operand (GEN_INT (value), VOIDmode);
++    case 'O':
++      return one_bit_set_operand (GEN_INT (value), VOIDmode);
++    case 'N':
++      return one_bit_cleared_operand (GEN_INT (value), VOIDmode);
++    case 'L':
++      /* The lower 16-bits are set. */
++      return ((value & 0xffff) == 0xffff) ;
+     }
+ 
+   return 0;
+@@ -4172,6 +4251,9 @@
+     {
+     case REG:
+       return avr32_address_register_rtx_p (x, strict);
++    case CONST_INT:
++      return ((mode==SImode) 
++              && CONST_OK_FOR_CONSTRAINT_P(INTVAL(x), 'K', "Ks17"));
+     case CONST:
+       {
+ 	rtx label = avr32_find_symbol (x);
+@@ -4188,7 +4270,10 @@
+                ||*/
+              ((GET_CODE (label) == LABEL_REF)
+               && GET_CODE (XEXP (label, 0)) == CODE_LABEL
+-              && is_minipool_label (XEXP (label, 0)))))
++    		  && is_minipool_label (XEXP (label, 0)))
++              /*|| ((GET_CODE (label) == SYMBOL_REF) 
++                  && mode == SImode
++                  && SYMBOL_REF_RMW_ADDR(label))*/))
+ 	  {
+ 	    return TRUE;
+ 	  }
+@@ -4208,12 +4293,9 @@
+ 		 && (symbol_mentioned_p (get_pool_constant (x))
+ 		     || label_mentioned_p (get_pool_constant (x)))))
+ 	  return TRUE;
+-	/*
+-	   A symbol_ref is only legal if it is a function. If all of them are
+-	   legal, a pseudo reg that is a constant will be replaced by a
+-	   symbol_ref and make illegale code. SYMBOL_REF_FLAG is set by
+-	   ENCODE_SECTION_INFO. */
+-	else if (SYMBOL_REF_RCALL_FUNCTION_P (x))
++	else if (SYMBOL_REF_RCALL_FUNCTION_P (x)
++                 || (mode == SImode
++                     && SYMBOL_REF_RMW_ADDR (x)))
+ 	  return TRUE;
+ 	break;
+       }
+@@ -4308,9 +4390,8 @@
+       else
+ 	return 0;
+     case LABEL_REF:
+-      return flag_pic || TARGET_HAS_ASM_ADDR_PSEUDOS;
+     case SYMBOL_REF:
+-      return flag_pic || TARGET_HAS_ASM_ADDR_PSEUDOS;
++      return avr32_find_symbol (x) && (flag_pic || TARGET_HAS_ASM_ADDR_PSEUDOS);
+     case CONST:
+     case HIGH:
+     case CONST_VECTOR:
+@@ -4389,17 +4470,25 @@
+ void
+ avr32_encode_section_info (tree decl, rtx rtl, int first)
+ {
++   default_encode_section_info(decl, rtl, first);
+ 
+-  if (first && DECL_P (decl))
+-    {
+-      /* Set SYMBOL_REG_FLAG for local functions */
+-      if (!TREE_PUBLIC (decl) && TREE_CODE (decl) == FUNCTION_DECL)
+-	{
+-	  if ((*targetm.binds_local_p) (decl))
+-	    {
+-	      SYMBOL_REF_FLAG (XEXP (rtl, 0)) = 1;
+-	    }
+-	}
++   if ( TREE_CODE (decl) == VAR_DECL
++        && (GET_CODE (XEXP (rtl, 0)) == SYMBOL_REF)
++        && (lookup_attribute ("rmw_addressable", DECL_ATTRIBUTES (decl))
++            || TARGET_RMW_ADDRESSABLE_DATA) ){
++     if ( !TARGET_RMW || flag_pic )
++       return;
++     //  {
++     //    warning ("Using RMW addressable data with an arch that does not support RMW instructions.");
++     //    return;
++     //  } 
++     //
++     //if ( flag_pic )
++     //  {
++     //    warning ("Using RMW addressable data with together with -fpic switch. Can not use RMW instruction when compiling with -fpic.");
++     //    return;
++     //  } 
++     SYMBOL_REF_FLAGS (XEXP (rtl, 0)) |= (1 << SYMBOL_FLAG_RMW_ADDR_SHIFT);
+   }
+ }
+ 
+@@ -4982,6 +5071,19 @@
+               value = bitpos;
+             }
+             break;
++          case 'z':
++            {
++              /* Set to bit position of first bit cleared in immediate */
++              int i, bitpos = 32;
++              for (i = 0; i < 32; i++)
++                if (!(value & (1 << i)))
++                  {
++                    bitpos = i;
++                    break;
++                  }
++              value = bitpos;
++            }
++            break;
+           case 'r':
+             {
+               /* Reglist 8 */
+@@ -5201,6 +5303,9 @@
+ 	  fprintf (stream, " + %ld",
+ 		   INTVAL (XEXP (XEXP (XEXP (x, 0), 0), 1)));
+ 	  break;
++        case CONST_INT:
++	  avr32_print_operand (stream, XEXP (x, 0), 0);
++          break;
+ 	default:
+ 	  error = 1;
+ 	}
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-02 11:52:56.000000000 -0600
+@@ -83,6 +83,10 @@
+ #define IS_FLASHVAULT(t)       (t & AVR32_FT_FLASHVAULT)
+ #define IS_FLASHVAULT_IMPL(t)  (t & AVR32_FT_FLASHVAULT_IMPL)
+ 
++#define SYMBOL_FLAG_RMW_ADDR_SHIFT    SYMBOL_FLAG_MACH_DEP_SHIFT
++#define SYMBOL_REF_RMW_ADDR(RTX)                                        \
++  ((SYMBOL_REF_FLAGS (RTX) & (1 << SYMBOL_FLAG_RMW_ADDR_SHIFT)) != 0)
++
+ 
+ typedef struct minipool_labels
+ GTY ((chain_next ("%h.next"), chain_prev ("%h.prev")))
+@@ -1260,8 +1264,7 @@
+ #define CONSTRAINT_LEN(C, STR)				\
+   ( ((C) == 'K' || (C) == 'I') ?  4 :			\
+     ((C) == 'R') ?  5 :					\
+-    ((C) == 'N' || (C) == 'O' ||			\
+-     (C) == 'P' || (C) == 'L') ? -1 :	\
++    ((C) == 'P') ? -1 :                                 \
+     DEFAULT_CONSTRAINT_LEN((C), (STR)) )
+ 
+ #define CONST_OK_FOR_CONSTRAINT_P(VALUE, C, STR)	\
+@@ -1315,11 +1318,15 @@
+    (C) == 'T' ? avr32_const_pool_ref_operand(OP, GET_MODE(OP)) :	\
+    (C) == 'U' ? SYMBOL_REF_RCALL_FUNCTION_P(OP) :			\
+    (C) == 'Z' ? avr32_cop_memory_operand(OP, GET_MODE(OP)) :		\
++   (C) == 'Q' ? avr32_non_rmw_memory_operand(OP, GET_MODE(OP)) :		\
++   (C) == 'Y' ? avr32_rmw_memory_operand(OP, GET_MODE(OP)) :            \
+    0)
+ 
+ 
+ #define EXTRA_MEMORY_CONSTRAINT(C, STR) ( ((C) == 'R') ||               \
++                                          ((C) == 'Q') ||               \
+                                           ((C) == 'S') ||               \
++                                          ((C) == 'Y') ||               \
+                                           ((C) == 'Z') )
+ 
+ 
+@@ -3291,7 +3298,10 @@
+   AVR32_BUILTIN_SATS,
+   AVR32_BUILTIN_SATU,
+   AVR32_BUILTIN_SATRNDS,
+-  AVR32_BUILTIN_SATRNDU
++  AVR32_BUILTIN_SATRNDU,
++  AVR32_BUILTIN_MEMS,
++  AVR32_BUILTIN_MEMC,
++  AVR32_BUILTIN_MEMT
+ };
+ 
+ 
+diff -Naur ./gcc/config/avr32/avr32.md ./gcc/config/avr32/avr32.md
+--- ./gcc/config/avr32/avr32.md	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/avr32.md	2010-12-02 11:52:56.000000000 -0600
+@@ -451,10 +451,9 @@
+   }
+ )
+ 
+-
+ (define_expand "mov<mode>"
+-  [(set (match_operand:MOVM 0 "register_operand" "")
+-	(match_operand:MOVM 1 "general_operand" ""))]
++  [(set (match_operand:MOVM 0 "avr32_non_rmw_nonimmediate_operand" "")
++	(match_operand:MOVM 1 "avr32_non_rmw_general_operand" ""))]
+   ""
+   {
+ 
+@@ -462,7 +461,6 @@
+     if (GET_CODE (operands[0]) == MEM)
+       operands[1] = force_reg (<MODE>mode, operands[1]);
+ 
+-
+     /* Check for out of range immediate constants as these may
+        occur during reloading, since it seems like reload does
+        not check if the immediate is legitimate. Don't know if
+@@ -473,7 +471,19 @@
+          && !avr32_const_ok_for_constraint_p(INTVAL(operands[1]), 'K', "Ks21") ){
+         operands[1] = force_const_mem(SImode, operands[1]);
+     }
++    /* Check for RMW memory operands. They are not allowed for mov operations
++       only the atomic memc/s/t operations */
++    if ( !reload_in_progress
++         && avr32_rmw_memory_operand (operands[0], <MODE>mode) ){
++       operands[0] = copy_rtx (operands[0]);                                                              
++       XEXP(operands[0], 0) = force_reg (<MODE>mode, XEXP(operands[0], 0));
++    }
+ 
++    if ( !reload_in_progress
++         && avr32_rmw_memory_operand (operands[1], <MODE>mode) ){
++       operands[1] = copy_rtx (operands[1]);                                                              
++      XEXP(operands[1], 0) = force_reg (<MODE>mode, XEXP(operands[1], 0));
++    }
+     if ( (flag_pic || TARGET_HAS_ASM_ADDR_PSEUDOS)
+          && !avr32_legitimate_pic_operand_p(operands[1]) )
+       operands[1] = legitimize_pic_address (operands[1], <MODE>mode,
+@@ -484,12 +494,13 @@
+   })
+ 
+ 
+-
+ (define_insn "mov<mode>_internal"
+-  [(set (match_operand:MOVM 0 "nonimmediate_operand"     "=r,   r,   r,r,r,m,r")
+-	(match_operand:MOVM 1 "general_operand"          "rKs08,Ks21,J,n,m,r,W"))]
+-  "register_operand (operands[0], <MODE>mode)
+-   || register_operand (operands[1], <MODE>mode)"
++  [(set (match_operand:MOVM 0 "avr32_non_rmw_nonimmediate_operand" "=r,   r,   r,r,r,Q,r")
++	(match_operand:MOVM 1 "avr32_non_rmw_general_operand"      "rKs08,Ks21,J,n,Q,r,W"))]
++  "(register_operand (operands[0], <MODE>mode)
++    || register_operand (operands[1], <MODE>mode))
++    && !avr32_rmw_memory_operand (operands[0], <MODE>mode) 
++    && !avr32_rmw_memory_operand (operands[1], <MODE>mode)"
+   {
+     switch (which_alternative) {
+       case 0:
+@@ -538,6 +549,27 @@
+    (set_attr "cc" "none,none,set_z_if_not_v2,set_z,none,none,clobber")])
+ 
+ 
++(define_expand "reload_out_rmw_memory_operand"
++  [(set (match_operand:SI 2 "register_operand" "=r")
++        (match_operand:SI 0 "address_operand" ""))
++   (set (mem:SI (match_dup 2))
++        (match_operand:SI 1 "register_operand" ""))]
++  ""
++  {
++   operands[0] = XEXP(operands[0], 0);
++  }
++)
++
++(define_expand "reload_in_rmw_memory_operand"
++  [(set (match_operand:SI 2 "register_operand" "=r")
++        (match_operand:SI 1 "address_operand" ""))
++   (set (match_operand:SI 0 "register_operand" "")
++        (mem:SI (match_dup 2)))]
++  ""
++  {
++   operands[1] = XEXP(operands[1], 0);
++  }
++)
+ 
+ 
+ ;; These instructions are for loading constants which cannot be loaded
+@@ -914,7 +946,7 @@
+ ;;=============================================================================
+ (define_insn "ld<mode>_predicable"
+   [(set (match_operand:MOVCC 0 "register_operand" "=r")
+-	(match_operand:MOVCC 1 "memory_operand" "<MOVCC:pred_mem_constraint>"))]
++	(match_operand:MOVCC 1 "avr32_non_rmw_memory_operand" "<MOVCC:pred_mem_constraint>"))]
+   "TARGET_V2_INSNS"
+   "ld<MOVCC:load_postfix>%?\t%0, %1"
+   [(set_attr "length" "4")
+@@ -925,7 +957,7 @@
+ 
+ 
+ (define_insn "st<mode>_predicable"
+-  [(set (match_operand:MOVCC 0 "memory_operand" "=<MOVCC:pred_mem_constraint>")
++  [(set (match_operand:MOVCC 0 "avr32_non_rmw_memory_operand" "=<MOVCC:pred_mem_constraint>")
+ 	(match_operand:MOVCC 1 "register_operand" "r"))]
+   "TARGET_V2_INSNS"
+   "st<MOVCC:store_postfix>%?\t%0, %1"
+@@ -1237,13 +1269,13 @@
+ 
+ (define_insn "adddi3"
+   [(set (match_operand:DI 0 "register_operand" "=r,r")
+-	(plus:DI (match_operand:DI 1 "register_operand" "%r,0")
++	(plus:DI (match_operand:DI 1 "register_operand" "%0,r")
+ 		 (match_operand:DI 2 "register_operand" "r,r")))]
+   ""
+   "@
+-   add     %0, %1, %2\;adc    %m0, %m1, %m2
+-   add     %0, %2\;adc    %m0, %m0, %m2"
+-  [(set_attr "length" "8,6")
++   add     %0, %2\;adc    %m0, %m0, %m2
++   add     %0, %1, %2\;adc    %m0, %m1, %m2"
++  [(set_attr "length" "6,8")
+    (set_attr "type" "alu2")
+    (set_attr "cc" "set_vncz")])
+ 
+@@ -1282,17 +1314,14 @@
+    (set_attr "cc" "<INTM:alu_cc_attr>")])
+ 
+ (define_insn "*sub<mode>3_mul"
+-  [(set (match_operand:INTM 0 "register_operand" "=r,r,r")
+-	(minus:INTM (match_operand:INTM 1 "register_operand" "r,0,r")
+-                    (mult:INTM (match_operand:INTM 2 "register_operand" "r,r,0")
+-                               (match_operand:SI 3 "immediate_operand" "Ku04,Ku04,Ku04" ))))]
++  [(set (match_operand:INTM 0 "register_operand" "=r")
++	(minus:INTM (match_operand:INTM 1 "register_operand" "r")
++                    (mult:INTM (match_operand:INTM 2 "register_operand" "r")
++                               (match_operand:SI 3 "immediate_operand" "Ku04" ))))]
+   "(INTVAL(operands[3]) == 0) || (INTVAL(operands[3]) == 2) ||
+    (INTVAL(operands[3]) == 4) || (INTVAL(operands[3]) == 8)"
+-  "@
+-   sub     %0, %1, %2 << %p3
+-   sub     %0, %0, %2 << %p3
+-   sub     %0, %1, %0 << %p3"
+-  [(set_attr "length" "4,4,4")
++  "sub     %0, %1, %2 << %p3"
++  [(set_attr "length" "4")
+    (set_attr "cc" "<INTM:alu_cc_attr>")])
+ 
+ (define_insn "*sub<mode>3_lsl"
+@@ -1308,13 +1337,13 @@
+ 
+ (define_insn "subdi3"
+   [(set (match_operand:DI 0 "register_operand" "=r,r")
+-	(minus:DI (match_operand:DI 1 "register_operand" "%r,0")
++	(minus:DI (match_operand:DI 1 "register_operand" "%0,r")
+ 		 (match_operand:DI 2 "register_operand" "r,r")))]
+   ""
+   "@
+-   sub     %0, %1, %2\;sbc    %m0, %m1, %m2
+-   sub     %0, %2\;sbc    %m0, %m0, %m2"
+-  [(set_attr "length" "8,6")
++   sub     %0, %2\;sbc    %m0, %m0, %m2
++   sub     %0, %1, %2\;sbc    %m0, %m1, %m2"
++  [(set_attr "length" "6,8")
+    (set_attr "type" "alu2")
+    (set_attr "cc" "set_vncz")])
+ 
+@@ -1482,7 +1511,7 @@
+    (set_attr "length" "4")
+    (set_attr "cc" "none")])
+ 
+-(define_insn "mulaccsidi3"
++(define_insn "*mulaccsidi3"
+   [(set (match_operand:DI 0 "register_operand" "+r")
+ 	(plus:DI (mult:DI
+ 		  (sign_extend:DI (match_operand:SI 1 "register_operand" "%r"))
+@@ -1494,7 +1523,7 @@
+    (set_attr "length" "4")
+    (set_attr "cc" "none")])
+ 
+-(define_insn "umulaccsidi3"
++(define_insn "*umulaccsidi3"
+   [(set (match_operand:DI 0 "register_operand" "+r")
+ 	(plus:DI (mult:DI
+ 		  (zero_extend:DI (match_operand:SI 1 "register_operand" "%r"))
+@@ -1866,56 +1895,24 @@
+ 
+ 
+ (define_insn "andsi3"
+-  [(set (match_operand:SI 0 "register_operand" "=r, r, r, r")
+-	(and:SI (match_operand:SI 1 "register_operand" "%0, r, 0, r")
+-                (match_operand:SI 2 "nonmemory_operand" "r, M, i, r")))]
+-  ""
+-  {
+-   switch (which_alternative){
+-    case 0:
+-         return "and\t%0, %2";
+-    case 1:
+-        {
+-         int i, first_set = -1;
+-         /* Search for first bit set in mask */
+-         for ( i = 31; i >= 0; --i )
+-           if ( INTVAL(operands[2]) & (1 << i) ){
+-             first_set = i;
+-             break;
+-           }
+-         operands[2] = gen_rtx_CONST_INT(SImode, first_set + 1);
+-         return "bfextu\t%0, %1, 0, %2";
+-        }
+-    case 2:
+-         if ( one_bit_cleared_operand(operands[2], VOIDmode) ){
+-             int bitpos;
+-             for ( bitpos = 0; bitpos < 32; bitpos++ )
+-               if ( !(INTVAL(operands[2]) & (1 << bitpos)) )
+-                 break;
+-             operands[2] = gen_rtx_CONST_INT(SImode, bitpos);
+-             return "cbr\t%0, %2";
+-         } else if ( (INTVAL(operands[2]) >= 0) &&
+-                     (INTVAL(operands[2]) <= 65535) )
+-             return "andl\t%0, %2, COH";
+-         else if ( (INTVAL(operands[2]) < 0) &&
+-                   (INTVAL(operands[2]) >= -65536 ) )
+-             return "andl\t%0, lo(%2)";
+-         else if ( ((INTVAL(operands[2]) & 0xffff) == 0xffff) )
+-             return "andh\t%0, hi(%2)";
+-         else if ( ((INTVAL(operands[2]) & 0xffff) == 0x0) )
+-             return "andh\t%0, hi(%2), COH";
+-         else
+-             return "andh\t%0, hi(%2)\;andl\t%0, lo(%2)";
+-    case 3:
+-         return "and\t%0, %1, %2";
+-    default:
+-	 abort();
+-    }
+-  }
+-  
+-  [(set_attr "length" "2,4,8,4")
+-   (set_attr "cc" "set_z")])
++   [(set (match_operand:SI 0 "avr32_rmw_memory_or_register_operand"          "=Y,r,r,r,   r,   r,r,r,r,r")
++ 	(and:SI (match_operand:SI 1 "avr32_rmw_memory_or_register_operand"  "%0,r,0,0,   0,   0,0,0,0,r" )
++ 		(match_operand:SI 2 "nonmemory_operand"                     " N,M,N,Ku16,Ks17,J,L,r,i,r")))]
++  ""
++   "@
++    memc\t%0, %z2
++    bfextu\t%0, %1, 0, %z2
++    cbr\t%0, %z2
++    andl\t%0, %2, COH
++    andl\t%0, lo(%2)
++    andh\t%0, hi(%2), COH
++    andh\t%0, hi(%2)
++    and\t%0, %2
++    andh\t%0, hi(%2)\;andl\t%0, lo(%2)
++    and\t%0, %1, %2"
+ 
++   [(set_attr "length" "4,4,2,4,4,4,4,2,8,4")
++    (set_attr "cc" "none,set_z,set_z,set_z,set_z,set_z,set_z,set_z,set_z,set_z")])
+ 
+   
+ 
+@@ -1936,37 +1933,21 @@
+ ;;=============================================================================
+ 
+ (define_insn "iorsi3"
+-  [(set (match_operand:SI 0 "register_operand"          "=r,r,r")
+-	(ior:SI (match_operand:SI 1 "register_operand"  "%0,0,r" )
+-		(match_operand:SI 2 "nonmemory_operand" "r ,i,r")))]
++  [(set (match_operand:SI 0 "avr32_rmw_memory_or_register_operand"          "=Y,r,r,   r,r,r,r")
++	(ior:SI (match_operand:SI 1 "avr32_rmw_memory_or_register_operand"  "%0,0,0,   0,0,0,r" )
++		(match_operand:SI 2 "nonmemory_operand"                     " O,O,Ku16,J,r,i,r")))]
+   ""
+-  {
+-   switch (which_alternative){
+-    case 0:
+-         return "or\t%0, %2";
+-    case 1:
+-         if ( one_bit_set_operand(operands[2], VOIDmode) ){
+-             int bitpos;
+-             for (bitpos = 0; bitpos < 32; bitpos++)
+-               if (INTVAL(operands[2]) & (1 << bitpos))
+-                 break;
+-             operands[2] = gen_rtx_CONST_INT( SImode, bitpos);
+-             return "sbr\t%0, %2";
+-         } else if ( (INTVAL(operands[2]) >= 0) &&
+-              (INTVAL(operands[2]) <= 65535) )
+-             return "orl\t%0, %2";
+-         else if ( ((INTVAL(operands[2]) & 0xffff) == 0x0) )
+-             return "orh\t%0, hi(%2)";
+-         else
+-             return "orh\t%0, hi(%2)\;orl\t%0, lo(%2)";
+-    case 2:
+-         return "or\t%0, %1, %2";
+-    default:
+-	 abort();
+-    }
+-  }
+-  [(set_attr "length" "2,8,4")
+-   (set_attr "cc" "set_z")])
++  "@
++   mems\t%0, %p2
++   sbr\t%0, %p2
++   orl\t%0, %2
++   orh\t%0, hi(%2)
++   or\t%0, %2
++   orh\t%0, hi(%2)\;orl\t%0, lo(%2)
++   or\t%0, %1, %2"
++
++  [(set_attr "length" "4,2,4,4,2,8,4")
++   (set_attr "cc" "none,set_z,set_z,set_z,set_z,set_z,set_z")])
+ 
+ 
+ (define_insn "iordi3"
+@@ -1986,32 +1967,20 @@
+ ;;=============================================================================
+ 
+ (define_insn "xorsi3"
+-  [(set (match_operand:SI 0 "register_operand" "=r,r,r")
+-	(xor:SI (match_operand:SI 1 "register_operand" "0,0,r")
+-		(match_operand:SI 2 "nonmemory_operand" "r,i,r")))]
+-  ""
+-  {
+-   switch (which_alternative){
+-    case 0:
+-         return "eor     %0, %2";
+-    case 1:
+-         if ( (INTVAL(operands[2]) >= 0) &&
+-              (INTVAL(operands[2]) <= 65535) )
+-             return "eorl    %0, %2";
+-         else if ( ((INTVAL(operands[2]) & 0xffff) == 0x0) )
+-             return "eorh    %0, hi(%2)";
+-         else
+-             return "eorh    %0, hi(%2)\;eorl    %0, lo(%2)";
+-    case 2:
+-         return "eor     %0, %1, %2";
+-    default:
+-	 abort();
+-    }
+-  }
+-  
+-  [(set_attr "length" "2,8,4")
+-   (set_attr "cc" "set_z")])
++   [(set (match_operand:SI 0 "avr32_rmw_memory_or_register_operand"          "=Y,r,   r,r,r,r")
++ 	(xor:SI (match_operand:SI 1 "avr32_rmw_memory_or_register_operand"  "%0,0,   0,0,0,r" )
++ 		(match_operand:SI 2 "nonmemory_operand"                     " O,Ku16,J,r,i,r")))]
++  ""
++   "@
++    memt\t%0, %p2
++    eorl\t%0, %2
++    eorh\t%0, hi(%2)
++    eor\t%0, %2
++    eorh\t%0, hi(%2)\;eorl\t%0, lo(%2)
++    eor\t%0, %1, %2"
+ 
++   [(set_attr "length" "4,4,4,2,8,4")
++    (set_attr "cc" "none,set_z,set_z,set_z,set_z,set_z")])
+ 
+ (define_insn "xordi3"
+   [(set (match_operand:DI 0 "register_operand" "=&r,&r")
+@@ -2371,12 +2340,12 @@
+ 
+ (define_insn "one_cmplsi2"
+   [(set (match_operand:SI 0 "register_operand" "=r,r")
+-	(not:SI (match_operand:SI 1 "register_operand" "r,0")))]
++	(not:SI (match_operand:SI 1 "register_operand" "0,r")))]
+   ""
+   "@
+-   rsub\t%0, %1, -1
+-   com\t%0"
+-  [(set_attr "length" "4,2")
++   com\t%0
++   rsub\t%0, %1, -1"
++  [(set_attr "length" "2,4")
+    (set_attr "cc" "set_z")])
+ 
+ 
+diff -Naur ./gcc/config/avr32/avr32.opt ./gcc/config/avr32/avr32.opt
+--- ./gcc/config/avr32/avr32.opt	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/avr32.opt	2010-12-02 11:52:56.000000000 -0600
+@@ -79,6 +79,11 @@
+ Target Report Undocumented Mask(COND_EXEC_BEFORE_RELOAD) 
+ Enable experimental conditional execution preparation before the reload stage. 
+ 
++mrmw-addressable-data
++Target Report Mask(RMW_ADDRESSABLE_DATA)
++Signal that all data is in range for the Atomic Read-Modify-Write memory instructions, and that
++gcc can safely generate these whenever possible. 
++
+ mflashvault
+ Target Var(TARGET_FLASHVAULT)
+ Generate code for flashvault
+diff -Naur ./gcc/config/avr32/predicates.md ./gcc/config/avr32/predicates.md
+--- ./gcc/config/avr32/predicates.md	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/predicates.md	2010-12-02 11:52:56.000000000 -0600
+@@ -315,13 +315,13 @@
+ 
+ ;; True if this is a valid avr32 symbol operand.
+ (define_predicate "avr32_symbol_operand"
+-  (ior (match_code "label_ref, symbol_ref")
+-       (and (match_code "const")
+-            (match_test "avr32_find_symbol(op)"))))
++   (and (match_code "label_ref, symbol_ref, const")
++        (match_test "avr32_find_symbol(op)")))
+ 
+ ;; True if this is a valid operand for the lda.w and call pseudo insns.
+ (define_predicate "avr32_address_operand"
+-  (and (match_code "label_ref, symbol_ref")
++   (and (and (match_code "label_ref, symbol_ref")
++             (match_test "avr32_find_symbol(op)"))
+        (ior (match_test "TARGET_HAS_ASM_ADDR_PSEUDOS")
+             (match_test "flag_pic")) ))
+ 
+@@ -384,3 +384,36 @@
+ (define_predicate "avr32_mov_immediate_operand"
+   (and (match_operand 0 "immediate_operand")
+        (match_test "avr32_const_ok_for_move(INTVAL(op))")))
++
++
++(define_predicate "avr32_rmw_address_operand"
++  (ior (and (match_code "symbol_ref") 
++            (match_test "({rtx symbol = avr32_find_symbol(op); \
++                               symbol && (GET_CODE (symbol) == SYMBOL_REF) && SYMBOL_REF_RMW_ADDR(symbol);})"))
++       (and (match_operand 0 "immediate_operand")
++            (match_test "CONST_OK_FOR_CONSTRAINT_P(INTVAL(op), 'K', \"Ks17\")")))
++  {
++     return TARGET_RMW && !flag_pic;
++  }
++)
++ 
++(define_predicate "avr32_rmw_memory_operand"
++  (and (match_code "mem") 
++       (match_test "!volatile_refs_p(op) && (GET_MODE(op) == SImode) && 
++                    avr32_rmw_address_operand(XEXP(op, 0), GET_MODE(XEXP(op, 0)))")))
++
++(define_predicate "avr32_rmw_memory_or_register_operand"
++  (ior (match_operand 0 "avr32_rmw_memory_operand")
++       (match_operand 0 "register_operand")))
++
++(define_predicate "avr32_non_rmw_memory_operand"
++  (and (not (match_operand 0 "avr32_rmw_memory_operand"))
++       (match_operand 0 "memory_operand")))
++
++(define_predicate "avr32_non_rmw_general_operand"
++  (and (not (match_operand 0 "avr32_rmw_memory_operand"))
++       (match_operand 0 "general_operand")))
++
++(define_predicate "avr32_non_rmw_nonimmediate_operand"
++  (and (not (match_operand 0 "avr32_rmw_memory_operand"))
++       (match_operand 0 "nonimmediate_operand")))
+diff -Naur ./gcc/regrename.c ./gcc/regrename.c
+--- ./gcc/regrename.c	2009-02-20 09:20:38.000000000 -0600
++++ ./gcc/regrename.c	2010-12-02 11:52:56.000000000 -0600
+@@ -1582,6 +1582,9 @@
+   bool changed = false;
+   rtx insn;
+ 
++  rtx prev_pred_test;
++  int prev_pred_insn_skipped = 0;
++
+   for (insn = BB_HEAD (bb); ; insn = NEXT_INSN (insn))
+     {
+       int n_ops, i, alt, predicated;
+@@ -1621,6 +1624,58 @@
+ 	    recog_data.operand_type[i] = OP_INOUT;
+ 	}
+ 
++
++      /* Added for targets (AVR32) which supports test operands to be modified
++         in cond_exec instruction. For these targets we cannot make a change to
++         the test operands if one of the test operands is an output operand This beacuse
++         changing the test operands might cause the need for inserting a new test
++         insns in the middle of a sequence of cond_exec insns and if the test operands
++         are modified these tests will fail.
++      */
++      if ( IFCVT_ALLOW_MODIFY_TEST_IN_INSN
++           && predicated )
++        { 
++          int insn_skipped = 0;
++          rtx test = COND_EXEC_TEST (PATTERN (insn));
++
++          /* Check if the previous insn was a skipped predicated insn with the same
++             test as this predicated insns. If so we cannot do any modification to
++             this insn either since we cannot emit the test insn because the operands
++             are clobbered. */
++          if ( prev_pred_insn_skipped 
++               && (rtx_equal_p (test, prev_pred_test) 
++                   || rtx_equal_p (test, reversed_condition (prev_pred_test))) )
++            { 
++              insn_skipped = 1;
++            }
++          else
++            {
++              /* Check if the output operand is used in the test expression. */
++              for (i = 0; i < n_ops; ++i)
++                if ( recog_data.operand_type[i] == OP_INOUT 
++                     && reg_mentioned_p (recog_data.operand[i], test) )
++                  {
++                    insn_skipped = 1;
++                    break;
++                  }
++              
++            }
++          
++          prev_pred_test = test;
++          prev_pred_insn_skipped = insn_skipped;
++          if ( insn_skipped )
++            {
++              if (insn == BB_END (bb))
++                break;
++              else
++                continue;
++            }
++        } 
++      else 
++        {
++          prev_pred_insn_skipped = 0;
++        }
++      
+       /* For each earlyclobber operand, zap the value data.  */
+       for (i = 0; i < n_ops; i++)
+ 	if (recog_op_alt[i][alt].earlyclobber)

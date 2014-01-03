@@ -1,0 +1,59 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-02 13:18:53.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-02 13:23:02.000000000 -0600
+@@ -146,6 +146,7 @@
+   {"uc3l032",      PART_TYPE_AVR32_UC3L032,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L032__"},
+   {"uc3l016",      PART_TYPE_AVR32_UC3L016,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L016__"},
+   {"uc3l064revb",  PART_TYPE_AVR32_UC3L064,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064REVB__"},
++  {"mxt768e",      PART_TYPE_AVR32_MXT768E,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT768E__"},
+   {NULL, 0, 0, NULL}
+ };
+ 
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-02 13:05:50.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-02 13:23:02.000000000 -0600
+@@ -197,7 +197,8 @@
+   PART_TYPE_AVR32_UC3L0256,
+   PART_TYPE_AVR32_UC3L064,
+   PART_TYPE_AVR32_UC3L032,
+-  PART_TYPE_AVR32_UC3L016
++  PART_TYPE_AVR32_UC3L016,
++  PART_TYPE_AVR32_MXT768E
+ };
+ 
+ /* Microarchitectures. */
+diff -Naur ./gcc/config/avr32/t-avr32 ./gcc/config/avr32/t-avr32
+--- ./gcc/config/avr32/t-avr32	2010-12-02 13:05:50.000000000 -0600
++++ ./gcc/config/avr32/t-avr32	2010-12-02 13:23:02.000000000 -0600
+@@ -75,6 +75,7 @@
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064revb
++MULTILIB_MATCHES     += march?ucr3=mpart?mxt768e
+ 
+ 
+ EXTRA_MULTILIB_PARTS = crtbegin.o crtbeginS.o crtend.o crtendS.o crti.o crtn.o
+diff -Naur ./gcc/config/avr32/t-avr32-linux ./gcc/config/avr32/t-avr32-linux
+--- ./gcc/config/avr32/t-avr32-linux	2010-12-02 13:05:50.000000000 -0600
++++ ./gcc/config/avr32/t-avr32-linux	2010-12-02 13:23:02.000000000 -0600
+@@ -75,6 +75,7 @@
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064revb
++MULTILIB_MATCHES     += march?ucr3=mpart?mxt768e
+ 
+ 
+ EXTRA_MULTILIB_PARTS = crtbegin.o crtbeginS.o crtend.o crtendS.o
+diff -Naur ./gcc/doc/invoke.texi ./gcc/doc/invoke.texi
+--- ./gcc/doc/invoke.texi	2010-12-02 13:05:50.000000000 -0600
++++ ./gcc/doc/invoke.texi	2010-12-02 13:23:02.000000000 -0600
+@@ -9429,7 +9429,8 @@
+ @samp{uc3l064},
+ @samp{uc3l032},
+ @samp{uc3l016},
+-@samp{uc3l064revb}.
++@samp{uc3l064revb},
++@samp{mxt768e}.
+ 
+ @item -mcpu=@var{cpu-type}
+ @opindex mcpu

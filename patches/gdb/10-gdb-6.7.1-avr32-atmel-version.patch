@@ -1,0 +1,6 @@
+diff -Narup gdb-6.7.1/gdb/version.in trunk/gdb/version.in.orig
+--- gdb/version.in.orig	2007-10-29 11:49:54.000000000 -0600
++++ gdb/version.in	2009-11-08 22:19:05.968750000 -0700
+@@ -1 +1 @@
+-6.7.1
++6.7.1.atmel.1.0.4

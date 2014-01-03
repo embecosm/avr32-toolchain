@@ -1,0 +1,104 @@
+
+    README for Atmel AVR Toolchain 3.4.2 Sources - AVR32 GNU Toolchain 
+    ==================================================================
+
+
+This directory contains the complete modified source code of various open source 
+software that was used for building the Atmel AVR Toolchain 3.4.2.
+
+
+CONTENTS
+========
+
+1. avr32-binutils-2.23.1.tar.gz
+
+   Binutils 2.23.1 with the modifications for AVR32 target
+
+2. avr32-gcc-4.4.7.tar.gz
+
+   GCC 4.4.7 with the modifications for AVR32 target
+
+3. avr32-newlib-1.16.0.tar.gz
+
+   Newlib 1.16.0 with the modifications for AVR32 target
+
+4. build-avr32-gnu-toolchain.sh
+
+   Script to build the toolchain
+
+5. avr32-patches.tar.gz
+
+   Modifications in the form of patches 
+
+
+
+HOW TO BUILD?
+=============
+
+Preparation:
+
+1. Create directories for build <bld>, source <src>, and install <install>
+  
+
+2. Copy the source tarballs to the corresponding directories in the following
+   locations:
+
+   <src>/binutils-src-patches/
+   <src>/gcc-src-patches/
+   <src>/newlib-src-patches/
+
+   * If patched source tarballs used directly, remove prefix 'avr32-' from name.
+     example: rename avr32-gcc-4.4.7.tar.gz to gcc-4.4.7.tar.gz
+
+
+3. If you are using the patches, then they must also be copied to the 
+   corresponding directories mentioned at [2]. In this case the source code
+   tarballs should contain unmodified sources which can be obtained form their 
+   respective project websites
+
+   Note: By default, the script uses the patches and expects the tarballs to be
+         clean sources obtained from their respective sites. However, if one
+         wants to build using the tarballs supplied here, he may have to modify
+         the build script to disable using the patches:
+
+         Function 'apply_patches' shall be used to apply patches to source. 
+         This shall be enabled/ disabled in following functions.
+           a. binutils_prep()
+           b. gcc_prep()
+           c. newlib_prep()
+
+
+4. Building the toolchain has following dependencies:
+
+   gmp-5.0.2
+   mpfr-3.0.0
+   mpc-0.9
+
+   They may be obtained from their respective project websites. The tarballs
+   of these should be copied to the following directories:
+
+   - gmp tar.gz file to <src>/gmp/
+   - mpfr tar.gz file to <src>/mpfr/
+   - mpc tar file to <src>/mpc/
+
+
+5. In order to build, issue the following command
+
+
+   sh build-avr32-gnu-toolchain.sh -b <bld> -p <install> -s <src> 
+
+
+   Note 1: If the binaries are required to be installed in the default 
+           directories, one may use  -P <root-passwd>  option to pass the root 
+           password.
+
+   Note 2: This current version assumes that the build environment has the 
+           following present and available:
+
+           - automake-1.11.1
+           - autoconf-2.64
+           - texinfo-4.13
+
+
+--------------------------------------------------------------------------------
+

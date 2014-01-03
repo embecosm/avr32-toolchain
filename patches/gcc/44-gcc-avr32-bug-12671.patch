@@ -1,0 +1,302 @@
+diff -rupw  gcc/config/avr32/avr32.c  gcc/config/avr32/avr32.c
+---  gcc/config/avr32/avr32.c	2011-02-11 13:55:48.000000000 -0600
++++  gcc/config/avr32/avr32.c	2011-02-11 13:52:07.000000000 -0600
+@@ -2335,6 +2335,8 @@ rtx avr32_compare_op0 = NULL_RTX;
+ rtx avr32_compare_op1 = NULL_RTX;
+ rtx avr32_compare_operator = NULL_RTX;
+ rtx avr32_acc_cache = NULL_RTX;
++/* type of branch to use */
++enum avr32_cmp_type avr32_branch_type;
+ 
+ 
+ /*
+diff -rupw  gcc/config/avr32/avr32.h  gcc/config/avr32/avr32.h
+---  gcc/config/avr32/avr32.h	2011-02-11 13:55:48.000000000 -0600
++++  gcc/config/avr32/avr32.h	2011-02-11 13:52:07.000000000 -0600
+@@ -38,6 +38,18 @@
+ extern struct rtx_def *avr32_compare_op0;
+ extern struct rtx_def *avr32_compare_op1;
+ 
++/* comparison type */
++enum avr32_cmp_type {
++  CMP_QI,				/* 1 byte ->char */
++  CMP_HI,				/* 2 byte->half word */
++  CMP_SI,				/* four byte->word*/
++  CMP_DI,				/* eight byte->double word */
++  CMP_SF,				/* single precision floats */
++  CMP_MAX				/* max comparison type */
++};
++
++extern enum avr32_cmp_type avr32_branch_type;	/* type of branch to use */
++
+ 
+ extern struct rtx_def *avr32_acc_cache;
+ 
+diff -rupw  gcc/config/avr32/avr32.md  gcc/config/avr32/avr32.md
+---  gcc/config/avr32/avr32.md	2011-02-11 13:55:48.000000000 -0600
++++  gcc/config/avr32/avr32.md	2011-02-11 14:01:58.000000000 -0600
+@@ -152,7 +152,9 @@
+                                (QI "4")])
+ 
+ ;; For all conditional insns
+-(define_code_iterator any_cond [eq ne gt ge lt le gtu geu ltu leu])
++(define_code_iterator any_cond_b [ge lt geu ltu])
++(define_code_iterator any_cond [gt ge lt le gtu geu ltu leu])
++(define_code_iterator any_cond4 [gt le gtu leu])
+ (define_code_attr cond [(eq "eq") (ne "ne") (gt "gt") (ge "ge") (lt "lt") (le "le")
+                         (gtu "hi") (geu "hs") (ltu "lo") (leu "ls")])
+ (define_code_attr invcond [(eq "ne") (ne "eq") (gt "le") (ge "lt") (lt "ge") (le "gt")
+@@ -2402,6 +2404,23 @@
+          (match_operand:CMP 1 "<CMP:cmp_predicate>" "<CMP:cmp_constraint>")))]
+   ""
+   {
++switch(GET_MODE(operands[0]))
++  {
++  case QImode:
++	avr32_branch_type = CMP_QI;
++	break;
++  case HImode:
++	avr32_branch_type = CMP_HI;
++	break;
++  case SImode:
++	avr32_branch_type = CMP_SI;
++	break;
++  case DImode:
++	avr32_branch_type = CMP_DI;
++	break;
++  default:
++	abort();
++  }
+    /* Check if the next insn already will output a compare. */
+    if (!next_insn_emits_cmp (insn))  
+      set_next_insn_cond(insn,
+@@ -2418,7 +2437,6 @@
+ 	 (match_operand:SF 1 "general_operand"  "")))]
+   "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
+   "{
+-   rtx tmpreg;
+    if ( !REG_P(operands[0]) )
+      operands[0] = force_reg(SFmode, operands[0]);
+ 
+@@ -2705,12 +2723,42 @@
+ ;;not separate the compare instrcution from the scc instruction as
+ ;;they might be sheduled "badly".
+ 
+-(define_insn "s<code>"
++(define_expand "s<code>"
++  [(set (match_operand:SI 0 "register_operand" "=r")
++	(any_cond:SI (cc0)
++                     (const_int 0)))]
++""
++{
++  if(TARGET_HARD_FLOAT && TARGET_ARCH_FPU)
++    FAIL;
++})
++
++(define_insn "*s<code>"
+   [(set (match_operand:SI 0 "register_operand" "=r")
+ 	(any_cond:SI (cc0)
+                      (const_int 0)))]
+   ""
+-  "sr<cond>\t%0"
++{
++    return "sr<cond>\t%0";
++}
++[(set_attr "length" "2")
++(set_attr "cc" "none")])
++
++(define_insn "seq"
++[(set (match_operand:SI 0 "register_operand" "=r")
++(eq:SI (cc0)
++				 (const_int 0)))]
++  ""
++"sreq\t%0"
++[(set_attr "length" "2")
++(set_attr "cc" "none")])
++
++(define_insn "sne"
++[(set (match_operand:SI 0 "register_operand" "=r")
++(ne:SI (cc0)
++				 (const_int 0)))]
++  ""
++"srne\t%0"
+   [(set_attr "length" "2")
+    (set_attr "cc" "none")])
+ 
+@@ -2803,12 +2851,40 @@
+ ; branch if equal
+ (define_insn "b<code>"
+   [(set (pc)
+-	(if_then_else (any_cond:CC (cc0)
++	(if_then_else (any_cond_b:CC (cc0)
+ 			  (const_int 0))
+ 		      (label_ref (match_operand 0 "" ""))
+ 		      (pc)))]
+   ""
+-  "br<cond>    %0 "
++  {
++    if (TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++       return get_attr_length(insn) == 6 ? "brvs .+6\;br<cond> %0" : "brvs .+8\;br<cond> %0";
++    else
++       return "br<cond> %0";
++  }
++  [(set_attr "type" "branch")
++   (set (attr "length")
++	(if_then_else (eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++		      (if_then_else 
++			   (and (le (minus (match_dup 0) (pc)) (const_int 254))
++		    (le (minus (pc) (match_dup 0)) (const_int 256)))
++		                 (const_int 6)
++		                 (const_int 8))
++		      (if_then_else 
++			   (and (le (minus (match_dup 0) (pc)) (const_int 254))
++		    (le (minus (pc) (match_dup 0)) (const_int 256)))
++				    (const_int 2)
++				    (const_int 4))))
++   (set_attr "cc" "none")])
++
++(define_insn "beq"
++  [(set (pc)
++	(if_then_else (eq:CC (cc0)
++			  (const_int 0))
++		      (label_ref (match_operand 0 "" ""))
++		      (pc)))]
++  ""
++  "breq %0";
+   [(set_attr "type" "branch")
+    (set (attr "length")
+ 	(cond [(and (le (minus (match_dup 0) (pc)) (const_int 254))
+@@ -2817,15 +2893,78 @@
+               (const_int 4))) ; use extended branch
+    (set_attr "cc" "none")])
+ 
++(define_insn "bne"
++  [(set (pc)
++	(if_then_else (ne:CC (cc0)
++			  (const_int 0))
++		      (label_ref (match_operand 0 "" ""))
++		      (pc)))]
++  ""
++  "brne %0";
++  [(set_attr "type" "branch")
++   (set (attr "length")
++	(cond [(and (le (minus (match_dup 0) (pc)) (const_int 254))
++		    (le (minus (pc) (match_dup 0)) (const_int 256)))
++	       (const_int 2)] ; use compact branch
++              (const_int 4))) ; use extended branch
++   (set_attr "cc" "none")])
++
++(define_insn "b<code>"
++  [(set (pc)
++	(if_then_else (any_cond4:CC (cc0)
++			  (const_int 0))
++		      (label_ref (match_operand 0 "" ""))
++		      (pc)))]
++  ""
++  {
++	if(TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++		return "brvs .+8\;br<cond> %l0";
++	else
++		return "br<cond> %l0";
++  }
++  [(set_attr "type" "branch")
++   (set (attr "length") 
++    (cond [(eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++		       (const_int 8)]
++               (const_int 4)))
++   (set_attr "cc" "none")])
+ 
+ (define_insn "*b<code>-reverse"
+   [(set (pc)
+-	(if_then_else (any_cond:CC (cc0)
++	(if_then_else (any_cond_b:CC (cc0)
++			  (const_int 0))
++		      (pc)
++		      (label_ref (match_operand 0 "" ""))))]
++  ""
++  {
++    if (TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++       return "brvs %0\;br<invcond> %0";
++    else
++       return "br<invcond> %0";
++  }
++  [(set_attr "type" "branch")
++   (set (attr "length")
++	(if_then_else (eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++		      (if_then_else 
++			   (and (le (minus (match_dup 0) (pc)) (const_int 254))
++		    (le (minus (pc) (match_dup 0)) (const_int 256)))
++		                 (const_int 6)
++		                 (const_int 8))
++		      (if_then_else 
++			   (and (le (minus (match_dup 0) (pc)) (const_int 254))
++		    (le (minus (pc) (match_dup 0)) (const_int 256)))
++				    (const_int 2)
++				    (const_int 4))))
++   (set_attr "cc" "none")])
++
++(define_insn "*beq-reverse"
++  [(set (pc)
++	(if_then_else (eq:CC (cc0)
+ 			  (const_int 0))
+ 		      (pc)
+ 		      (label_ref (match_operand 0 "" ""))))]
+   ""
+-  "br<invcond>    %0 "
++  "brne %0";
+   [(set_attr "type" "branch")
+    (set (attr "length")
+ 	(cond [(and (le (minus (match_dup 0) (pc)) (const_int 254))
+@@ -2834,7 +2973,41 @@
+               (const_int 4))) ; use extended branch
+    (set_attr "cc" "none")])
+ 
++(define_insn "*bne-reverse"
++  [(set (pc)
++	(if_then_else (ne:CC (cc0)
++			  (const_int 0))
++		      (pc)
++		      (label_ref (match_operand 0 "" ""))))]
++  ""
++  "breq %0";
++  [(set_attr "type" "branch")
++   (set (attr "length")
++	(cond [(and (le (minus (match_dup 0) (pc)) (const_int 254))
++		    (le (minus (pc) (match_dup 0)) (const_int 256)))
++	       (const_int 2)] ; use compact branch
++              (const_int 4))) ; use extended branch
++   (set_attr "cc" "none")])
+ 
++(define_insn "*b<code>-reverse"
++  [(set (pc)
++	(if_then_else (any_cond4:CC (cc0)
++			  (const_int 0))
++		      (pc)
++		      (label_ref (match_operand 0 "" ""))))]
++  ""
++  {
++    if (TARGET_HARD_FLOAT && TARGET_ARCH_FPU && (avr32_branch_type == CMP_SF))
++       return "brvs %l0\;br<invcond> %l0";
++    else
++       return "br<invcond> %0";
++  }
++  [(set_attr "type" "branch")
++   (set (attr "length") 
++    (cond [(eq (const_int 1)(symbol_ref "TARGET_HARD_FLOAT && TARGET_ARCH_FPU"))
++		       (const_int 8)]
++               (const_int 4)))
++   (set_attr "cc" "none")])
+ 
+ ;=============================================================================
+ ; Conditional Add/Subtract
+diff -rupw  gcc/config/avr32/uc3fpu.md  gcc/config/avr32/uc3fpu.md
+---  gcc/config/avr32/uc3fpu.md	2011-02-11 13:55:48.000000000 -0600
++++  gcc/config/avr32/uc3fpu.md	2011-02-11 13:52:07.000000000 -0600
+@@ -151,6 +151,7 @@
+          (match_operand:SF 1 "register_operand" "r")))]
+   "TARGET_ARCH_FPU && TARGET_HARD_FLOAT"
+   {
++        avr32_branch_type = CMP_SF;
+    if (!rtx_equal_p(cc_prev_status.mdep.value, SET_SRC(PATTERN (insn))) )
+       return "fcmp.s\t%0, %1";
+    return "";

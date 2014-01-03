@@ -1,0 +1,318 @@
+diff -Naurp gas/config/tc-avr32.c gas/config/tc-avr32.c
+--- gas/config/tc-avr32.c	2012-03-21 12:39:12.000000000 +0530
++++ gas/config/tc-avr32.c	2012-03-21 12:40:59.000000000 +0530
+@@ -205,17 +205,8 @@ static struct part_type_s part_types[] =
+     {"uc3b1256es",    ARCH_TYPE_UCR1},
+     {"uc3b1512",      ARCH_TYPE_UCR2},
+     {"uc3b1512revc",  ARCH_TYPE_UCR2},
+-    {"uc3c064c",      ARCH_TYPE_UCR3},
+-    {"uc3c0128c",     ARCH_TYPE_UCR3},
+-    {"uc3c0256c",     ARCH_TYPE_UCR3},
+     {"uc3c0512crevc", ARCH_TYPE_UCR3},
+-    {"uc3c164c",      ARCH_TYPE_UCR3},
+-    {"uc3c1128c",     ARCH_TYPE_UCR3},
+-    {"uc3c1256c",     ARCH_TYPE_UCR3},
+     {"uc3c1512crevc", ARCH_TYPE_UCR3},
+-    {"uc3c264c",      ARCH_TYPE_UCR3},
+-    {"uc3c2128c",     ARCH_TYPE_UCR3},
+-    {"uc3c2256c",     ARCH_TYPE_UCR3},
+     {"uc3c2512crevc", ARCH_TYPE_UCR3},
+     {"atuc3l0256",    ARCH_TYPE_UCR3},
+     {"mxt768e",       ARCH_TYPE_UCR3},
+@@ -223,6 +214,18 @@ static struct part_type_s part_types[] =
+     {"uc3l032",       ARCH_TYPE_UCR3},
+     {"uc3l016",       ARCH_TYPE_UCR3},
+     {"uc3l064revb",   ARCH_TYPE_UCR3},
++    {"uc3c064c",  ARCH_TYPE_UCR3FP},
++    {"uc3c0128c",   ARCH_TYPE_UCR3FP},
++    {"uc3c0256c",   ARCH_TYPE_UCR3FP},
++    {"uc3c0512c",   ARCH_TYPE_UCR3FP},
++    {"uc3c164c",  ARCH_TYPE_UCR3FP},
++    {"uc3c1128c",   ARCH_TYPE_UCR3FP},
++    {"uc3c1256c",   ARCH_TYPE_UCR3FP},
++    {"uc3c1512c",   ARCH_TYPE_UCR3FP},
++    {"uc3c264c",  ARCH_TYPE_UCR3FP},
++    {"uc3c2128c",   ARCH_TYPE_UCR3FP},
++    {"uc3c2256c",   ARCH_TYPE_UCR3FP},
++    {"uc3c2512c",   ARCH_TYPE_UCR3FP},
+     {NULL, 0}
+ };
+ 
+diff -Naurp ld/configure.tgt ld/configure.tgt
+--- ld/configure.tgt	2012-03-21 12:39:12.000000000 +0530
++++ ld/configure.tgt	2012-03-21 12:40:59.000000000 +0530
+@@ -121,7 +121,7 @@ avr-*-*)		targ_emul=avr2
+ 			targ_extra_emuls="avr1 avr25 avr3 avr31 avr35 avr4 avr5 avr51 avr6 avrxmega1 avrxmega2 avrxmega3 avrxmega4 avrxmega5 avrxmega6 avrxmega7"
+ 			;;
+ avr32-*-none)           targ_emul=avr32elf_ap7000
+-                        targ_extra_emuls="avr32elf_ap7001 avr32elf_ap7002 avr32elf_ap7200 avr32elf_uc3a0128 avr32elf_uc3a0256 avr32elf_uc3a0512 avr32elf_uc3a0512es avr32elf_uc3a1128 avr32elf_uc3a1256 avr32elf_uc3a1512es avr32elf_uc3a1512 avr32elf_uc3a364 avr32elf_uc3a364s avr32elf_uc3a3128 avr32elf_uc3a3128s avr32elf_uc3a3256 avr32elf_uc3a3256s avr32elf_uc3b064 avr32elf_uc3b0128 avr32elf_uc3b0256es avr32elf_uc3b0256 avr32elf_uc3b0512 avr32elf_uc3b0512revc avr32elf_uc3b164 avr32elf_uc3b1128 avr32elf_uc3b1256es avr32elf_uc3b1256 avr32elf_uc3b1512 avr32elf_uc3b1512revc avr32elf_uc3c064c avr32elf_uc3c0128c avr32elf_uc3c0256c avr32elf_uc3c0512crevc avr32elf_uc3c164c avr32elf_uc3c1128c avr32elf_uc3c1256c avr32elf_uc3c1512crevc avr32elf_uc3c264c avr32elf_uc3c2128c avr32elf_uc3c2256c avr32elf_uc3c2512crevc avr32elf_atuc3l0256 avr32elf_mxt768e avr32elf_uc3l064 avr32elf_uc3l032 avr32elf_uc3l016 avr32elf_uc3l064revb" ;;
++                        targ_extra_emuls="avr32elf_ap7001 avr32elf_ap7002 avr32elf_ap7200 avr32elf_uc3a0128 avr32elf_uc3a0256 avr32elf_uc3a0512 avr32elf_uc3a0512es avr32elf_uc3a1128 avr32elf_uc3a1256 avr32elf_uc3a1512es avr32elf_uc3a1512 avr32elf_uc3a364 avr32elf_uc3a364s avr32elf_uc3a3128 avr32elf_uc3a3128s avr32elf_uc3a3256 avr32elf_uc3a3256s avr32elf_uc3b064 avr32elf_uc3b0128 avr32elf_uc3b0256es avr32elf_uc3b0256 avr32elf_uc3b0512 avr32elf_uc3b0512revc avr32elf_uc3b164 avr32elf_uc3b1128 avr32elf_uc3b1256es avr32elf_uc3b1256 avr32elf_uc3b1512 avr32elf_uc3b1512revc avr32elf_uc3c0512crevc avr32elf_uc3c1512crevc avr32elf_uc3c2512crevc avr32elf_atuc3l0256 avr32elf_mxt768e avr32elf_uc3l064 avr32elf_uc3l032 avr32elf_uc3l016 avr32elf_uc3l064revb avr32elf_uc3c064c avr32elf_uc3c0128c avr32elf_uc3c0256c avr32elf_uc3c0512c avr32elf_uc3c164c avr32elf_uc3c1128c avr32elf_uc3c1256c avr32elf_uc3c1512c avr32elf_uc3c264c avr32elf_uc3c2128c avr32elf_uc3c2256c avr32elf_uc3c2512c" ;;
+ avr32-*-linux*)         targ_emul=avr32linux ;;
+ bfin-*-elf)		targ_emul=elf32bfin;
+ 			targ_extra_emuls="elf32bfinfd"
+diff -Naurp ld/emulparams/avr32elf.sh ld/emulparams/avr32elf.sh
+--- ld/emulparams/avr32elf.sh	2012-03-21 12:39:12.000000000 +0530
++++ ld/emulparams/avr32elf.sh	2012-03-21 12:40:59.000000000 +0530
+@@ -127,7 +127,79 @@ avr32elf_uc3*)
+ "
+ 
+     case "$EMULATION" in
+-    avr32elf_uc3[ac][012]512*)
++    avr32elf_uc3c[012]512c)
++        MEMORY="
++MEMORY
++{
++    FLASH (rxai!w) : ORIGIN = 0x80000000, LENGTH = 512K
++    CPUSRAM (wxa!ri) : ORIGIN = 0x00000004, LENGTH = 0xFFFC
++    USERPAGE : ORIGIN = 0x80800000, LENGTH = 512
++    FACTORYPAGE : ORIGIN = 0x80800200, LENGTH = 512
++    FLASHVAULT_FLASH_SIZE (r) : ORIGIN = 0x80800400, LENGTH = 8
++    FLASHVAULT_RAM_SIZE (r) : ORIGIN = 0x80800408, LENGTH = 8
++}
++"
++        OTHER_SECTIONS="${OTHER_SECTIONS}
++  .flashvault_flash_size : { KEEP(*(.flashvault_flash_size .flashvault_flash_size.*)) } > FLASHVAULT_FLASH_SIZE
++  .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
++"
++        ;;
++
++    avr32elf_uc3c[012]256c)
++        MEMORY="
++MEMORY
++{
++    FLASH (rxai!w) : ORIGIN = 0x80000000, LENGTH = 256K
++    CPUSRAM (wxa!ri) : ORIGIN = 0x00000004, LENGTH = 0xFFFC
++    USERPAGE : ORIGIN = 0x80800000, LENGTH = 512
++    FACTORYPAGE : ORIGIN = 0x80800200, LENGTH = 512
++    FLASHVAULT_FLASH_SIZE (r) : ORIGIN = 0x80800400, LENGTH = 8
++    FLASHVAULT_RAM_SIZE (r) : ORIGIN = 0x80800408, LENGTH = 8
++}
++"
++        OTHER_SECTIONS="${OTHER_SECTIONS}
++  .flashvault_flash_size : { KEEP(*(.flashvault_flash_size .flashvault_flash_size.*)) } > FLASHVAULT_FLASH_SIZE
++  .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
++"
++        ;;
++
++    avr32elf_uc3c[012]128c)
++        MEMORY="
++MEMORY
++{
++    FLASH (rxai!w) : ORIGIN = 0x80000000, LENGTH = 128K
++    CPUSRAM (wxa!ri) : ORIGIN = 0x00000004, LENGTH = 0x7FFC
++    USERPAGE : ORIGIN = 0x80800000, LENGTH = 512
++    FACTORYPAGE : ORIGIN = 0x80800200, LENGTH = 512
++    FLASHVAULT_FLASH_SIZE (r) : ORIGIN = 0x80800400, LENGTH = 8
++    FLASHVAULT_RAM_SIZE (r) : ORIGIN = 0x80800408, LENGTH = 8
++}
++"
++        OTHER_SECTIONS="${OTHER_SECTIONS}
++  .flashvault_flash_size : { KEEP(*(.flashvault_flash_size .flashvault_flash_size.*)) } > FLASHVAULT_FLASH_SIZE
++  .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
++"
++        ;;
++
++    avr32elf_uc3c[012]64c)
++        MEMORY="
++MEMORY
++{
++    FLASH (rxai!w) : ORIGIN = 0x80000000, LENGTH = 64K
++    CPUSRAM (wxa!ri) : ORIGIN = 0x00000004, LENGTH = 0x3FFC
++    USERPAGE : ORIGIN = 0x80800000, LENGTH = 512
++    FACTORYPAGE : ORIGIN = 0x80800200, LENGTH = 512
++    FLASHVAULT_FLASH_SIZE (r) : ORIGIN = 0x80800400, LENGTH = 8
++    FLASHVAULT_RAM_SIZE (r) : ORIGIN = 0x80800408, LENGTH = 8
++}
++"
++        OTHER_SECTIONS="${OTHER_SECTIONS}
++  .flashvault_flash_size : { KEEP(*(.flashvault_flash_size .flashvault_flash_size.*)) } > FLASHVAULT_FLASH_SIZE
++  .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
++"
++        ;;
++
++   avr32elf_uc3[ac][012]512*)
+        MEMORY="
+ MEMORY
+ {
+@@ -139,7 +211,7 @@ MEMORY
+ "
+         ;;
+ 
+-    avr32elf_uc3[ac][012]256*)
++    avr32elf_uc3a[012]256*)
+         MEMORY="
+ MEMORY
+ {
+@@ -195,7 +267,7 @@ MEMORY
+ "
+         ;;
+ 
+-    avr32elf_uc3[abc][012]128*)
++    avr32elf_uc3[ab][012]128*)
+         MEMORY="
+ MEMORY
+ {
+@@ -207,7 +279,7 @@ MEMORY
+ "
+         ;;
+ 
+-    avr32elf_uc3[bc][0123]64*)
++    avr32elf_uc3b[0123]64*)
+         MEMORY="
+ MEMORY
+ {
+@@ -322,6 +394,8 @@ MEMORY
+   .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
+ "
+         ;;
++
++
+     esac
+     ;;
+ 
+diff -Naurp ld/Makefile.am ld/Makefile.am
+--- ld/Makefile.am	2012-03-21 12:39:12.000000000 +0530
++++ ld/Makefile.am	2012-03-21 12:40:59.000000000 +0530
+@@ -202,17 +202,8 @@ ALL_EMULATION_SOURCES = \
+ 	eavr32elf_uc3b1256.c \
+ 	eavr32elf_uc3b1512.c \
+ 	eavr32elf_uc3b1512revc.c \
+-	eavr32elf_uc3c064c.c \
+-	eavr32elf_uc3c0128c.c \
+-	eavr32elf_uc3c0256c.c \
+ 	eavr32elf_uc3c0512crevc.c \
+-	eavr32elf_uc3c164c.c \
+-	eavr32elf_uc3c1128c.c \
+-	eavr32elf_uc3c1256c.c \
+ 	eavr32elf_uc3c1512crevc.c \
+-	eavr32elf_uc3c264c.c \
+-	eavr32elf_uc3c2128c.c \
+-	eavr32elf_uc3c2256c.c \
+ 	eavr32elf_uc3c2512crevc.c \
+ 	eavr32elf_atuc3l0256.c \
+         eavr32elf_mxt768e.c \
+@@ -220,6 +211,18 @@ ALL_EMULATION_SOURCES = \
+ 	eavr32elf_uc3l032.c \
+ 	eavr32elf_uc3l016.c \
+ 	eavr32elf_uc3l064revb.c \
++	eavr32elf_uc3c064c.c \
++	eavr32elf_uc3c0128c.c \
++	eavr32elf_uc3c0256c.c \
++	eavr32elf_uc3c0512c.c \
++	eavr32elf_uc3c164c.c \
++	eavr32elf_uc3c1128c.c \
++	eavr32elf_uc3c1256c.c \
++	eavr32elf_uc3c1512c.c \
++	eavr32elf_uc3c264c.c \
++	eavr32elf_uc3c2128c.c \
++	eavr32elf_uc3c2256c.c \
++	eavr32elf_uc3c2512c.c \
+ 	eavr32linux.c \
+ 	ecoff_i860.c \
+ 	ecoff_sparc.c \
+@@ -1016,6 +1019,42 @@ eavr32elf_uc3b1512revc.c: $(srcdir)/emul
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} avr32elf_uc3b1512revc "$(tdir_avr32)" avr32elf
++eavr32elf_uc3c0512crevc.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3c0512crevc "$(tdir_avr32)" avr32elf
++eavr32elf_uc3c1512crevc.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3c1512crevc "$(tdir_avr32)" avr32elf
++eavr32elf_uc3c2512crevc.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3c2512crevc "$(tdir_avr32)" avr32elf
++eavr32elf_atuc3l0256.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_atuc3l0256 "$(tdir_avr32)" avr32elf
++eavr32elf_mxt768e.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_mxt768e "$(tdir_avr32)" avr32elf
++eavr32elf_uc3l064.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3l064 "$(tdir_avr32)" avr32elf
++eavr32elf_uc3l032.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3l032 "$(tdir_avr32)" avr32elf
++eavr32elf_uc3l016.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3l016 "$(tdir_avr32)" avr32elf
++eavr32elf_uc3l064revb.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_uc3l064revb "$(tdir_avr32)" avr32elf
+ eavr32elf_uc3c064c.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+@@ -1028,10 +1067,10 @@ eavr32elf_uc3c0256c.c: $(srcdir)/emulpar
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} avr32elf_uc3c0256c "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3c0512crevc.c: $(srcdir)/emulparams/avr32elf.sh \
++eavr32elf_uc3c0512c.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3c0512crevc "$(tdir_avr32)" avr32elf
++	${GENSCRIPTS} avr32elf_uc3c0512c "$(tdir_avr32)" avr32elf
+ eavr32elf_uc3c164c.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+@@ -1044,10 +1083,10 @@ eavr32elf_uc3c1256c.c: $(srcdir)/emulpar
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} avr32elf_uc3c1256c "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3c1512crevc.c: $(srcdir)/emulparams/avr32elf.sh \
++eavr32elf_uc3c1512c.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3c1512crevc "$(tdir_avr32)" avr32elf
++	${GENSCRIPTS} avr32elf_uc3c1512c "$(tdir_avr32)" avr32elf
+ eavr32elf_uc3c264c.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+@@ -1060,34 +1099,10 @@ eavr32elf_uc3c2256c.c: $(srcdir)/emulpar
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} avr32elf_uc3c2256c "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3c2512crevc.c: $(srcdir)/emulparams/avr32elf.sh \
+-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+-  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3c2512crevc "$(tdir_avr32)" avr32elf
+-eavr32elf_atuc3l0256.c: $(srcdir)/emulparams/avr32elf.sh \
++eavr32elf_uc3c2512c.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_atuc3l0256 "$(tdir_avr32)" avr32elf
+-eavr32elf_mxt768e.c: $(srcdir)/emulparams/avr32elf.sh \
+-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+-  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_mxt768e "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3l064.c: $(srcdir)/emulparams/avr32elf.sh \
+-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+-  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3l064 "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3l032.c: $(srcdir)/emulparams/avr32elf.sh \
+-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+-  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3l032 "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3l016.c: $(srcdir)/emulparams/avr32elf.sh \
+-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+-  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3l016 "$(tdir_avr32)" avr32elf
+-eavr32elf_uc3l064revb.c: $(srcdir)/emulparams/avr32elf.sh \
+-  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+-  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+-	${GENSCRIPTS} avr32elf_uc3l064revb "$(tdir_avr32)" avr32elf
++	${GENSCRIPTS} avr32elf_uc3c2512c "$(tdir_avr32)" avr32elf
+ eavr32linux.c: $(srcdir)/emulparams/avr32linux.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}

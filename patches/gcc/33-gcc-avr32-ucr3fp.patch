@@ -1,0 +1,83 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-02 11:59:45.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-02 12:00:36.000000000 -0600
+@@ -174,6 +174,10 @@
+    (FLAG_AVR32_HAS_DSP | FLAG_AVR32_HAS_RMW
+     | FLAG_AVR32_HAS_V2_INSNS),
+    "__AVR32_UC__=3"},
++  {"ucr3fp", ARCH_TYPE_AVR32_UCR3FP, UARCH_TYPE_AVR32A,
++   (FLAG_AVR32_HAS_DSP | FLAG_AVR32_HAS_RMW | FLAG_AVR32_HAS_FPU
++    | FLAG_AVR32_HAS_V2_INSNS),
++   "__AVR32_UC__=3"},
+   {NULL, 0, 0, 0, NULL}
+ };
+ 
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-02 11:59:45.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-02 12:00:36.000000000 -0600
+@@ -206,6 +206,7 @@
+   ARCH_TYPE_AVR32_UCR2,
+   ARCH_TYPE_AVR32_UCR2NOMUL,
+   ARCH_TYPE_AVR32_UCR3,
++  ARCH_TYPE_AVR32_UCR3FP,
+   ARCH_TYPE_AVR32_NONE
+ };
+ 
+@@ -228,6 +229,9 @@
+ #define FLAG_AVR32_HAS_V2_INSNS (1 << 7)
+ /* Flag specifying that the cpu has buggy mul insns. */
+ #define FLAG_AVR32_HAS_NO_MUL_INSNS (1 << 8)
++/* Flag specifying that the device has FPU instructions according 
++   to AVR32002 specifications*/
++#define FLAG_AVR32_HAS_FPU (1 << 9)
+ 
+ /* Structure for holding information about different avr32 CPUs/parts */
+ struct part_type_s
+@@ -269,6 +273,7 @@
+ #define TARGET_ARCH_UC (TARGET_ARCH_UCR1 || TARGET_ARCH_UCR2)
+ #define TARGET_UARCH_AVR32A (avr32_arch->uarch_type == UARCH_TYPE_AVR32A)
+ #define TARGET_UARCH_AVR32B (avr32_arch->uarch_type == UARCH_TYPE_AVR32B)
++#define TARGET_ARCH_FPU (avr32_arch->feature_flags & FLAG_AVR32_HAS_FPU)
+ 
+ #define CAN_DEBUG_WITHOUT_FP
+ 
+diff -Naur ./gcc/config/avr32/avr32.md ./gcc/config/avr32/avr32.md
+--- ./gcc/config/avr32/avr32.md	2010-12-02 11:59:45.000000000 -0600
++++ ./gcc/config/avr32/avr32.md	2010-12-02 12:00:36.000000000 -0600
+@@ -28,7 +28,7 @@
+ 
+ 
+ ; NB! Keep this in sync with enum architecture_type in avr32.h
+-(define_attr "pipeline" "ap,ucr1,ucr2,ucr2nomul,ucr3"
++(define_attr "pipeline" "ap,ucr1,ucr2,ucr2nomul,ucr3,ucr3fp"
+   (const (symbol_ref "avr32_arch->arch_type")))
+ 
+ ; Insn length in bytes
+diff -Naur ./gcc/config/avr32/t-avr32 ./gcc/config/avr32/t-avr32
+--- ./gcc/config/avr32/t-avr32	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/t-avr32	2010-12-02 12:00:36.000000000 -0600
+@@ -24,8 +24,8 @@
+ 
+ #LIB2FUNCS_EXTRA += $(srcdir)/config/avr32/lib2funcs.S
+ 
+-MULTILIB_OPTIONS     = march=ap/march=ucr1/march=ucr2/march=ucr2nomul/march=ucr3
+-MULTILIB_DIRNAMES    = ap ucr1 ucr2 ucr2nomul ucr3
++MULTILIB_OPTIONS     = march=ap/march=ucr1/march=ucr2/march=ucr2nomul/march=ucr3/march=ucr3fp
++MULTILIB_DIRNAMES    = ap ucr1 ucr2 ucr2nomul ucr3 ucr3fp
+ MULTILIB_EXCEPTIONS  =
+ MULTILIB_MATCHES     += march?ap=mpart?ap7000
+ MULTILIB_MATCHES     += march?ap=mpart?ap7001
+diff -Naur ./gcc/config/avr32/t-avr32-linux ./gcc/config/avr32/t-avr32-linux
+--- ./gcc/config/avr32/t-avr32-linux	2010-12-02 11:51:18.000000000 -0600
++++ ./gcc/config/avr32/t-avr32-linux	2010-12-02 12:00:36.000000000 -0600
+@@ -24,8 +24,8 @@
+ 
+ #LIB2FUNCS_EXTRA += $(srcdir)/config/avr32/lib2funcs.S
+ 
+-MULTILIB_OPTIONS     = march=ap/march=ucr1/march=ucr2/march=ucr2nomul/march=ucr3
+-MULTILIB_DIRNAMES    = ap ucr1 ucr2 ucr2nomul ucr3
++MULTILIB_OPTIONS     = march=ap/march=ucr1/march=ucr2/march=ucr2nomul/march=ucr3/march=ucr3fp
++MULTILIB_DIRNAMES    = ap ucr1 ucr2 ucr2nomul ucr3 ucr3fp
+ MULTILIB_EXCEPTIONS  =
+ MULTILIB_MATCHES     += march?ap=mpart?ap7000
+ MULTILIB_MATCHES     += march?ap=mpart?ap7001

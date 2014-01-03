@@ -1,0 +1,80 @@
+diff -Naur gcc/config/avr32/avr32.c gcc/config/avr32/avr32.c
+--- gcc/config/avr32/avr32.c	2011-01-18 13:12:18.000000000 -0600
++++ gcc/config/avr32/avr32.c	2011-01-18 13:13:20.000000000 -0600
+@@ -117,6 +117,12 @@
+   {"uc3a3128s",       PART_TYPE_AVR32_UC3A3128S,       ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3128S__"},
+   {"uc3a3256",        PART_TYPE_AVR32_UC3A3256,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3256__"},
+   {"uc3a3256s",       PART_TYPE_AVR32_UC3A3256S,       ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3256S__"},
++  {"uc3a464",         PART_TYPE_AVR32_UC3A464,         ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A464__"},
++  {"uc3a464s",        PART_TYPE_AVR32_UC3A464S,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A464S__"},
++  {"uc3a4128",        PART_TYPE_AVR32_UC3A4128,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A4128__"},
++  {"uc3a4128s",       PART_TYPE_AVR32_UC3A4128S,       ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A4128S__"},
++  {"uc3a4256",        PART_TYPE_AVR32_UC3A4256,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A4256__"},
++  {"uc3a4256s",       PART_TYPE_AVR32_UC3A4256S,       ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A4256S__"},
+   {"uc3b064",         PART_TYPE_AVR32_UC3B064,         ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B064__"},
+   {"uc3b0128",        PART_TYPE_AVR32_UC3B0128,        ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0128__"},
+   {"uc3b0256",        PART_TYPE_AVR32_UC3B0256,        ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0256__"},
+diff -Naur gcc/config/avr32/avr32.h gcc/config/avr32/avr32.h
+--- gcc/config/avr32/avr32.h	2011-01-18 13:12:18.000000000 -0600
++++ gcc/config/avr32/avr32.h	2011-01-18 13:13:20.000000000 -0600
+@@ -170,6 +170,12 @@
+   PART_TYPE_AVR32_UC3A3128S,
+   PART_TYPE_AVR32_UC3A3256,
+   PART_TYPE_AVR32_UC3A3256S,
++  PART_TYPE_AVR32_UC3A464,
++  PART_TYPE_AVR32_UC3A464S,
++  PART_TYPE_AVR32_UC3A4128,
++  PART_TYPE_AVR32_UC3A4128S,
++  PART_TYPE_AVR32_UC3A4256,
++  PART_TYPE_AVR32_UC3A4256S,
+   PART_TYPE_AVR32_UC3B064,
+   PART_TYPE_AVR32_UC3B0128,
+   PART_TYPE_AVR32_UC3B0256,
+diff -Naur gcc/config/avr32/t-avr32 gcc/config/avr32/t-avr32
+--- gcc/config/avr32/t-avr32	2011-01-18 13:12:18.000000000 -0600
++++ gcc/config/avr32/t-avr32	2011-01-18 13:13:20.000000000 -0600
+@@ -46,6 +46,12 @@
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3a3128s
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3a3256
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3a3256s
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a464
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a464s
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4128
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4128s
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4256
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4256s
+ MULTILIB_MATCHES     += march?ucr1=mpart?uc3b064
+ MULTILIB_MATCHES     += march?ucr1=mpart?uc3b0128
+ MULTILIB_MATCHES     += march?ucr1=mpart?uc3b0256es
+diff -Naur gcc/config/avr32/t-avr32-linux gcc/config/avr32/t-avr32-linux
+--- gcc/config/avr32/t-avr32-linux	2011-01-18 13:12:18.000000000 -0600
++++ gcc/config/avr32/t-avr32-linux	2011-01-18 13:13:20.000000000 -0600
+@@ -46,6 +46,12 @@
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3a3128s
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3a3256
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3a3256s
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a464
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a464s
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4128
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4128s
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4256
++MULTILIB_MATCHES     += march?ucr2=mpart?uc3a4256s
+ MULTILIB_MATCHES     += march?ucr1=mpart?uc3b064
+ MULTILIB_MATCHES     += march?ucr1=mpart?uc3b0128
+ MULTILIB_MATCHES     += march?ucr1=mpart?uc3b0256es
+diff -Naur gcc/doc/invoke.texi gcc/doc/invoke.texi
+--- gcc/doc/invoke.texi	2011-01-18 13:12:18.000000000 -0600
++++ gcc/doc/invoke.texi	2011-01-18 13:13:20.000000000 -0600
+@@ -9401,6 +9401,12 @@
+ @samp{uc3a3128s},
+ @samp{uc3a3256},
+ @samp{uc3a3256s},
++@samp{uc3a464},
++@samp{uc3a464s},
++@samp{uc3a4128},
++@samp{uc3a4128s},
++@samp{uc3a4256},
++@samp{uc3a4256s},
+ @samp{uc3b064},
+ @samp{uc3b0128},
+ @samp{uc3b0256},

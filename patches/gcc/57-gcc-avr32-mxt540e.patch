@@ -1,0 +1,55 @@
+diff -Naurp gcc/config/avr32/avr32.c gcc/config/avr32/avr32.c
+--- gcc/config/avr32/avr32.c	2011-11-18 17:07:45.000000000 +0530
++++ gcc/config/avr32/avr32.c	2011-11-18 16:58:33.000000000 +0530
+@@ -166,6 +166,7 @@ static const struct part_type_s avr32_pa
+   {"uc3c2128c",       PART_TYPE_AVR32_UC3C2128C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C2128C__"},
+   {"uc3c2256c",       PART_TYPE_AVR32_UC3C2256C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C2256C__"},
+   {"uc3c2512c",       PART_TYPE_AVR32_UC3C2512C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C2512C__"},
++  {"mxt540e",         PART_TYPE_AVR32_MXT540E,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT540E__"},
+   {"mxt768e",         PART_TYPE_AVR32_MXT768E,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT768E__"},
+   {"mxt1664s",        PART_TYPE_AVR32_MXT1664S,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT1664S__"},
+   {"mxt1664eng",      PART_TYPE_AVR32_MXT1664ENG,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT1664ENG__"},
+diff -Naurp gcc/config/avr32/avr32.h gcc/config/avr32/avr32.h
+--- gcc/config/avr32/avr32.h	2011-11-18 17:07:45.000000000 +0530
++++ gcc/config/avr32/avr32.h	2011-11-18 17:03:17.000000000 +0530
+@@ -219,6 +219,7 @@ enum part_type
+   PART_TYPE_AVR32_UC3C2128C,
+   PART_TYPE_AVR32_UC3C2256C,
+   PART_TYPE_AVR32_UC3C2512C,
++  PART_TYPE_AVR32_MXT540E,
+   PART_TYPE_AVR32_MXT768E,
+   PART_TYPE_AVR32_MXT1664S,
+   PART_TYPE_AVR32_MXT1664ENG
+diff -Naurp gcc/config/avr32/t-avr32 gcc/config/avr32/t-avr32
+--- gcc/config/avr32/t-avr32	2011-11-18 17:07:45.000000000 +0530
++++ gcc/config/avr32/t-avr32	2011-11-18 17:04:05.000000000 +0530
+@@ -95,6 +95,7 @@ MULTILIB_MATCHES     += march?ucr3fp=mpa
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2128c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2256c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2512c
++MULTILIB_MATCHES     += march?ucr3=mpart?mxt540e
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt768e
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt1664s
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt1664eng
+diff -Naurp gcc/config/avr32/t-avr32-linux gcc/config/avr32/t-avr32-linux
+--- gcc/config/avr32/t-avr32-linux	2011-11-18 17:07:45.000000000 +0530
++++ gcc/config/avr32/t-avr32-linux	2011-11-18 17:04:49.000000000 +0530
+@@ -95,6 +95,7 @@ MULTILIB_MATCHES     += march?ucr3fp=mpa
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2128c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2256c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2512c
++MULTILIB_MATCHES     += march?ucr3=mpart?mxt540e
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt768e
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt1664s
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt1664eng
+diff -Naurp gcc/doc/invoke.texi gcc/doc/invoke.texi
+--- gcc/doc/invoke.texi	2011-11-18 17:07:45.000000000 +0530
++++ gcc/doc/invoke.texi	2011-11-18 17:06:06.000000000 +0530
+@@ -9450,6 +9450,7 @@ Generate code for the specified part. Pe
+ @samp{uc3c2128c},
+ @samp{uc3c2256c},
+ @samp{uc3c2512c},
++@samp{mxt540e},
+ @samp{mxt768e},
+ @samp{mxt1664s},
+ @samp{mxt1664eng}.

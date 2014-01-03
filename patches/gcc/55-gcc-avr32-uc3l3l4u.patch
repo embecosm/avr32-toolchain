@@ -1,0 +1,83 @@
+diff -Naur gcc/config/avr32/avr32.c gcc/config/avr32/avr32.c
+--- gcc/config/avr32/avr32.c	2011-01-18 13:31:28.000000000 -0600
++++ gcc/config/avr32/avr32.c	2011-01-18 13:34:08.000000000 -0600
+@@ -147,7 +147,13 @@
+   {"uc3l064",         PART_TYPE_AVR32_UC3L064,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064__"},
+   {"uc3l032",         PART_TYPE_AVR32_UC3L032,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L032__"},
+   {"uc3l016",         PART_TYPE_AVR32_UC3L016,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L016__"},
+-  {"uc3l064revb",     PART_TYPE_AVR32_UC3L064,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064REVB__"},
++  {"uc3l064revb",     PART_TYPE_AVR32_UC3L064REVB,     ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064REVB__"},
++  {"uc64l3u",         PART_TYPE_AVR32_UC64L3U,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC64L3U__"},
++  {"uc128l3u",        PART_TYPE_AVR32_UC128L3U,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC128L3U__"},
++  {"uc256l3u",        PART_TYPE_AVR32_UC256L3U,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC256L3U__"},
++  {"uc64l4u",         PART_TYPE_AVR32_UC64L4U,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC64L4U__"},
++  {"uc128l4u",        PART_TYPE_AVR32_UC128L4U,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC128L4U__"},
++  {"uc256l4u",        PART_TYPE_AVR32_UC256L4U,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC256L4U__"},
+   {"uc3c064c",        PART_TYPE_AVR32_UC3C064C,        ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C064C__"},
+   {"uc3c0128c",       PART_TYPE_AVR32_UC3C0128C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C0128C__"},
+   {"uc3c0256c",       PART_TYPE_AVR32_UC3C0256C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C0256C__"},
+diff -Naur gcc/config/avr32/avr32.h gcc/config/avr32/avr32.h
+--- gcc/config/avr32/avr32.h	2011-01-18 13:31:28.000000000 -0600
++++ gcc/config/avr32/avr32.h	2011-01-18 13:34:08.000000000 -0600
+@@ -200,6 +200,13 @@
+   PART_TYPE_AVR32_UC3L064,
+   PART_TYPE_AVR32_UC3L032,
+   PART_TYPE_AVR32_UC3L016,
++  PART_TYPE_AVR32_UC3L064REVB,
++  PART_TYPE_AVR32_UC64L3U,
++  PART_TYPE_AVR32_UC128L3U,
++  PART_TYPE_AVR32_UC256L3U,
++  PART_TYPE_AVR32_UC64L4U,
++  PART_TYPE_AVR32_UC128L4U,
++  PART_TYPE_AVR32_UC256L4U,
+   PART_TYPE_AVR32_UC3C064C,
+   PART_TYPE_AVR32_UC3C0128C,
+   PART_TYPE_AVR32_UC3C0256C,
+diff -Naur gcc/config/avr32/t-avr32 gcc/config/avr32/t-avr32
+--- gcc/config/avr32/t-avr32	2011-01-18 13:31:28.000000000 -0600
++++ gcc/config/avr32/t-avr32	2011-01-18 13:34:08.000000000 -0600
+@@ -77,6 +77,12 @@
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064revb
++MULTILIB_MATCHES     += march?ucr3=mpart?uc64l3u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc128l3u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc256l3u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc64l4u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc128l4u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc256l4u
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c064c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0128c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0256c
+diff -Naur gcc/config/avr32/t-avr32-linux gcc/config/avr32/t-avr32-linux
+--- gcc/config/avr32/t-avr32-linux	2011-01-18 13:31:28.000000000 -0600
++++ gcc/config/avr32/t-avr32-linux	2011-01-18 13:34:08.000000000 -0600
+@@ -77,6 +77,12 @@
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064revb
++MULTILIB_MATCHES     += march?ucr3=mpart?uc64l3u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc128l3u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc256l3u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc64l4u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc128l4u
++MULTILIB_MATCHES     += march?ucr3=mpart?uc256l4u
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c064c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0128c
+ MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0256c
+diff -Naur gcc/doc/invoke.texi gcc/doc/invoke.texi
+--- gcc/doc/invoke.texi	2011-01-18 13:31:28.000000000 -0600
++++ gcc/doc/invoke.texi	2011-01-18 13:34:08.000000000 -0600
+@@ -9432,6 +9432,12 @@
+ @samp{uc3l032},
+ @samp{uc3l016},
+ @samp{uc3l064revb},
++@samp{uc64l3u},
++@samp{uc128l3u},
++@samp{uc256l3u},
++@samp{uc64l4u},
++@samp{uc128l4u},
++@samp{uc256l4u},
+ @samp{uc3c064c},
+ @samp{uc3c0128c},
+ @samp{uc3c0256c},

@@ -1,0 +1,864 @@
+diff -Naurp binutils/doc/binutils.texi binutils/doc/binutils.texi
+--- binutils/doc/binutils.texi	2011-07-23 01:52:34.000000000 +0530
++++ binutils/doc/binutils.texi	2011-11-28 12:27:49.000000000 +0530
+@@ -2037,6 +2037,10 @@ using the switch @option{--disassembler-
+ useful when attempting to disassemble thumb code produced by other
+ compilers.
+ 
++For the AVR32 architectures that support Floating point unit (FPU), 
++specifying @option{-M decode-fpu} will enable disassembler to print the
++floating point instructions instead of 'cop' instructions. 
++
+ For the x86, some of the options duplicate functions of the @option{-m}
+ switch, but allow finer grained control.  Multiple selections from the
+ following may be specified as a comma separated string.
+diff -Naurp gas/config/tc-avr32.c gas/config/tc-avr32.c
+--- gas/config/tc-avr32.c	2011-11-28 12:17:28.000000000 +0530
++++ gas/config/tc-avr32.c	2011-11-28 12:27:49.000000000 +0530
+@@ -140,6 +140,7 @@ enum avr32_arch {
+   ARCH_TYPE_UCR1,
+   ARCH_TYPE_UCR2,
+   ARCH_TYPE_UCR3,
++  ARCH_TYPE_UCR3FP
+ };
+ 
+ struct arch_type_s
+@@ -164,7 +165,8 @@ static struct arch_type_s arch_types[] =
+     {"ucr1", AVR32_V1 | AVR32_DSP | AVR32_RMW},
+     {"ucr2", AVR32_V1 | AVR32_V2 | AVR32_DSP | AVR32_RMW},
+     {"ucr3", AVR32_V1 | AVR32_V2 | AVR32_V3 | AVR32_DSP | AVR32_RMW},
+-    {"all-insn", AVR32_V1 | AVR32_V2 | AVR32_V3 | AVR32_SIMD | AVR32_DSP | AVR32_RMW | AVR32_FP | AVR32_PICO},
++    {"ucr3fp", AVR32_V1 | AVR32_V2 | AVR32_V3 | AVR32_DSP | AVR32_RMW | AVR32_V3FP},
++    {"all-insn", AVR32_V1 | AVR32_V2 | AVR32_V3 | AVR32_SIMD | AVR32_DSP | AVR32_RMW | AVR32_V3FP | AVR32_PICO},
+     {NULL, 0}
+ };
+ 
+@@ -222,7 +224,7 @@ static struct part_type_s part_types[] =
+ };
+ 
+ /* Current architecture type.  */
+-static struct arch_type_s default_arch = {"all-insn", AVR32_V1 | AVR32_V2 | AVR32_V3 | AVR32_SIMD | AVR32_DSP | AVR32_RMW | AVR32_FP | AVR32_PICO };
++static struct arch_type_s default_arch = {"all-insn", AVR32_V1 | AVR32_V2 | AVR32_V3 | AVR32_SIMD | AVR32_DSP | AVR32_RMW | AVR32_V3FP | AVR32_PICO };
+ static struct arch_type_s *avr32_arch = &default_arch;
+ 
+ /* Display nicely formatted list of known part- and architecture names.  */
+@@ -881,7 +883,7 @@ match_coh(char *str)
+ {
+   return strcasecmp(str, "coh") == 0;
+ }
+-
++#if 0
+ static int
+ match_fpreg(char *str)
+ {
+@@ -899,6 +901,7 @@ match_fpreg(char *str)
+ 
+   return 1;
+ }
++#endif
+ 
+ static int
+ match_picoreg(char *str)
+@@ -1894,7 +1897,7 @@ parse_jospinc(const struct avr32_operand
+ }
+ 
+ #define parse_coh		parse_nothing
+-
++#if 0
+ static void
+ parse_fpreg(const struct avr32_operand *op,
+ 	    char *str, int opindex ATTRIBUTE_UNUSED)
+@@ -1911,6 +1914,7 @@ parse_fpreg(const struct avr32_operand *
+   current_insn.field_value[slot].value = regid;
+   current_insn.field_value[slot].align_order = op->align_order;
+ }
++#endif
+ 
+ static void
+ parse_picoreg(const struct avr32_operand *op,
+@@ -2061,8 +2065,6 @@ struct avr32_operand avr32_operand_table
+   OP(MCALL, 1, 0, 2, mcall),
+   OP(JOSPINC, 0, 0, 0, jospinc),
+   OP(COH, 0, 0, 0, coh),
+-  OP(FPREG_S, 0, 0, 0, fpreg),
+-  OP(FPREG_D, 0, 0, 1, fpreg),
+   OP(PICO_REG_W, 0, 0, 0, picoreg),
+   OP(PICO_REG_D, 0, 0, 1, picoreg),
+   OP(PICO_REGLIST_W, 0, 0, 0, pico_reglist_w),
+@@ -2330,6 +2332,9 @@ static const struct avr32_relax_type avr
+     EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+     /* 646: movh */
+     E(0, 65535, 0), EMPTY, EMPTY,
++  /* 649: fmac.s */
++  EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
++  EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+   };
+ 
+ #undef E
+diff -Naurp opcodes/avr32-asm.c opcodes/avr32-asm.c
+--- opcodes/avr32-asm.c	2011-11-28 12:27:22.000000000 +0530
++++ opcodes/avr32-asm.c	2011-11-28 12:27:49.000000000 +0530
+@@ -56,14 +56,6 @@ static const struct reg_entry cr_table[]
+   };
+ #define AVR32_NR_CPREGS (sizeof(cr_table)/sizeof(cr_table[0]))
+ 
+-/* Floating-point Registers.  */
+-static const struct reg_entry fr_table[] =
+-  {
+-    { "fr0",   0 }, { "fr1",   1 }, { "fr2",   2 }, { "fr3",   3 },
+-    { "fr4",   4 }, { "fr5",   5 }, { "fr6",   6 }, { "fr7",   7 },
+-    { "fr8",   8 }, { "fr9",   9 }, { "fr10", 10 }, { "fr11", 11 },
+-    { "fr12", 12 }, { "fr13", 13 }, { "fr14", 14 }, { "fr15", 15 },
+-  };
+ #define AVR32_NR_FPREGS (sizeof(fr_table)/sizeof(fr_table[0]))
+ 
+ /* PiCo Registers.  */
+@@ -106,18 +98,6 @@ avr32_parse_cpreg(const char *str)
+   return -1;
+ }
+ 
+-int avr32_parse_fpreg(const char *str)
+-{
+-  unsigned int i;
+-
+-  for (i = 0; i < AVR32_NR_FPREGS; i++)
+-    {
+-      if (strcasecmp(fr_table[i].name, str) == 0)
+-	return fr_table[i].number;
+-    }
+-
+-  return -1;
+-}
+ 
+ int avr32_parse_picoreg(const char *str)
+ {
+diff -Naurp opcodes/avr32-asm.h opcodes/avr32-asm.h
+--- opcodes/avr32-asm.h	2011-11-28 12:27:22.000000000 +0530
++++ opcodes/avr32-asm.h	2011-11-28 12:27:49.000000000 +0530
+@@ -27,8 +27,6 @@ avr32_parse_intreg(const char *str);
+ extern int
+ avr32_parse_cpreg(const char *str);
+ extern int
+-avr32_parse_fpreg(const char *str);
+-extern int
+ avr32_parse_picoreg(const char *str);
+ extern unsigned long
+ avr32_parse_reglist(char *str, char **endptr);
+diff -Naurp opcodes/avr32-dis.c opcodes/avr32-dis.c
+--- opcodes/avr32-dis.c	2011-11-28 12:27:22.000000000 +0530
++++ opcodes/avr32-dis.c	2011-11-28 12:27:49.000000000 +0530
+@@ -39,6 +39,7 @@ struct reg_entry
+ #define strneq(a,b,n)	(strncmp ((a), (b), (n)) == 0)
+ #endif
+ 
++static char avr32_opt_decode_fpu = 0;
+ 
+ static const struct reg_entry reg_table[] =
+   {
+@@ -774,6 +775,8 @@ print_opcode(bfd_vma insn_word, const st
+     }
+ }
+ 
++#define is_fpu_insn(iw) ((iw&0xf9f0e000)==0xe1a00000) 
++
+ static const struct avr32_opcode *
+ find_opcode(bfd_vma insn_word)
+ {
+@@ -784,8 +787,21 @@ find_opcode(bfd_vma insn_word)
+       const struct avr32_opcode *opc = &avr32_opc_table[i];
+ 
+       if ((insn_word & opc->mask) == opc->value)
++      {
++        if (avr32_opt_decode_fpu)
++        {
++          if (is_fpu_insn(insn_word))
++          {
++            if (opc->id != AVR32_OPC_COP)
++	       return opc;
++          }
++          else
++            return opc;
++        }
++        else
+ 	return opc;
+     }
++   }
+ 
+   return NULL;
+ }
+@@ -822,6 +838,13 @@ parse_avr32_disassembler_option (option)
+   if (option == NULL)
+     return;
+ 
++  if (!strcmp(option,"decode-fpu"))
++  {
++    avr32_opt_decode_fpu = 1;
++    return;
++  }
++
++  printf("\n%s--",option);
+   /* XXX - should break 'option' at following delimiter.  */
+   fprintf (stderr, _("Unrecognised disassembler option: %s\n"), option);
+ 
+@@ -887,5 +910,7 @@ print_insn_avr32(bfd_vma pc, struct disa
+ void
+ print_avr32_disassembler_options (FILE *stream ATTRIBUTE_UNUSED)
+ {
+-
++  fprintf(stream, "\n AVR32 Specific Disassembler Options:\n");
++  fprintf(stream, "  -M decode-fpu                  Print FPU instructions instead of 'cop' \n");
+ }
++
+diff -Naurp opcodes/avr32-opc.c opcodes/avr32-opc.c
+--- opcodes/avr32-opc.c	2011-11-28 12:27:22.000000000 +0530
++++ opcodes/avr32-opc.c	2011-11-28 12:27:49.000000000 +0530
+@@ -212,6 +212,10 @@ const struct avr32_ifield avr32_ifield_t
+     IFLD(CM_HL, 1, 8, 0x00000100, simple),
+     IFLD(K12CP, 12 ,0, 0x0000f0ff, k12cp),
+     IFLD(K9E, 9 ,0, 0x000001ff, simple),
++    IFLD (FP_RX, 4,  4, 0x000000F0, simple),
++    IFLD (FP_RY, 4,  0, 0x0000000F, simple),
++    IFLD (FP_RD, 4,  8, 0x00000F00, simple),
++    IFLD (FP_RA, 4, 16, 0x000F0000, simple) 
+   };
+ #undef IFLD
+ 
+@@ -4450,115 +4454,167 @@ struct avr32_opcode avr32_opc_table[] =
+       BFD_RELOC_UNUSED, 0, -1, { NULL },
+     },
+ 
+- };
+-
+-#define FPALIAS_DXY(name, opcode)			\
+-  {							\
+-    AVR32_ALIAS_##name##_S,				\
+-    &avr32_opc_table[AVR32_OPC_COP],			\
+-    {							\
+-      { 0, 0 },						\
+-      { 1, 0 }, { 1, 1 }, { 1, 2 },			\
+-      { 0, opcode },					\
+-    },							\
+-  }, {							\
+-    AVR32_ALIAS_##name##_D,				\
+-    &avr32_opc_table[AVR32_OPC_COP],			\
+-    {							\
+-      { 0, 0 },						\
+-      { 1, 0 }, { 1, 1 }, { 1, 2 },			\
+-      { 0, (opcode) | 0x40 },				\
+-    },							\
+-  }
+-#define FPALIAS_DX(name, opcode)			\
+-  {							\
+-    AVR32_ALIAS_##name##_S,				\
+-    &avr32_opc_table[AVR32_OPC_COP],			\
+-    {							\
+-      { 0, 0 },						\
+-      { 1, 0 }, { 1, 1 }, { 0, 0 },			\
+-      { 0, opcode },					\
+-    },							\
+-  }, {							\
+-    AVR32_ALIAS_##name##_D,				\
+-    &avr32_opc_table[AVR32_OPC_COP],			\
+-    {							\
+-      { 0, 0 },						\
+-      { 1, 0 }, { 1, 1 }, { 0, 0 },			\
+-      { 0, (opcode) | 0x40 },				\
+-    },							\
+-  }
+-#define FPALIAS_XY(name, opcode)			\
+-  {							\
+-    AVR32_ALIAS_##name##_S,				\
+-    &avr32_opc_table[AVR32_OPC_COP],			\
+-    {							\
+-      { 0, 0 },						\
+-      { 0, 0 }, { 1, 0 }, { 1, 1 },			\
+-      { 0, opcode },					\
+-    },							\
+-  }, {							\
+-    AVR32_ALIAS_##name##_D,				\
+-    &avr32_opc_table[AVR32_OPC_COP],			\
+-    {							\
+-      { 0, 0 },						\
+-      { 0, 0 }, { 1, 0 }, { 1, 1 },			\
+-      { 0, (opcode) | 0x40 },				\
+-    },							\
+-  }
+-
+-const struct avr32_alias avr32_alias_table[] =
+   {
+-    FPALIAS_DXY(FMAC, 0x00),
+-    FPALIAS_DXY(FNMAC, 0x01),
+-    FPALIAS_DXY(FMSC, 0x02),
+-    FPALIAS_DXY(FNMSC, 0x03),
+-    FPALIAS_DXY(FADD, 0x04),
+-    FPALIAS_DXY(FSUB, 0x05),
+-    FPALIAS_DXY(FMUL, 0x06),
+-    FPALIAS_DXY(FNMUL, 0x07),
+-    FPALIAS_DX(FNEG, 0x08),
+-    FPALIAS_DX(FABS, 0x09),
+-    FPALIAS_XY(FCMP, 0x0d),
+-    FPALIAS_DX(FMOV1, 0x0a),
++    AVR32_OPC_FMAC_S, 4, 0xE1A00000, 0xFFF0F000,
++    &avr32_syntax_table[AVR32_SYNTAX_FMAC_S],
++    BFD_RELOC_UNUSED, 4, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RA],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FNMAC_S, 4, 0xE1A01000, 0xFFF0F000,
++    &avr32_syntax_table[AVR32_SYNTAX_FNMAC_S],
++    BFD_RELOC_UNUSED, 4, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RA],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FMSC_S, 4, 0xE3A00000, 0xFFF0F000,
++    &avr32_syntax_table[AVR32_SYNTAX_FMSC_S],
++    BFD_RELOC_UNUSED, 4, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RA],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FNMSC_S, 4, 0xE3A01000, 0xFFF0F000,
++    &avr32_syntax_table[AVR32_SYNTAX_FNMSC_S],
++    BFD_RELOC_UNUSED, 4, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RA],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FMUL_S, 4, 0xE5A20000, 0xFFFFF000,
++    &avr32_syntax_table[AVR32_SYNTAX_FMUL_S],
++    BFD_RELOC_UNUSED, 3, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FNMUL_S, 4, 0xE5A30000, 0xFFFFF000,
++    &avr32_syntax_table[AVR32_SYNTAX_FNMUL_S],
++    BFD_RELOC_UNUSED, 3, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FADD_S, 4, 0xE5A00000, 0xFFFFF000,
++    &avr32_syntax_table[AVR32_SYNTAX_FADD_S],
++    BFD_RELOC_UNUSED, 3, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FSUB_S, 4, 0xE5A10000, 0xFFFFF000,
++    &avr32_syntax_table[AVR32_SYNTAX_FSUB_S],
++    BFD_RELOC_UNUSED, 3, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FCASTRS_SW, 4, 0xE5AB0000, 0xFFFFF0F0,
++    &avr32_syntax_table[AVR32_SYNTAX_FCASTRS_SW],
++    BFD_RELOC_UNUSED, 2, -1,
+     {
+-      AVR32_ALIAS_FMOV2_S,
+-      &avr32_opc_table[AVR32_OPC_MVCR_W],
+-      { { 0, 0 }, { 1, 0 }, { 1, 1 }, },
+-    },
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FCASTRS_UW, 4, 0xE5A90000, 0xFFFFF0F0,
++    &avr32_syntax_table[AVR32_SYNTAX_FCASTRS_UW],
++    BFD_RELOC_UNUSED, 2, -1,
+     {
+-      AVR32_ALIAS_FMOV2_D,
+-      &avr32_opc_table[AVR32_OPC_MVCR_D],
+-      { { 0, 0 }, { 1, 0 }, { 1, 1 }, },
+-    },
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FCASTSW_S, 4, 0xE5A60000, 0xFFFFF0F0,
++    &avr32_syntax_table[AVR32_SYNTAX_FCASTSW_S],
++    BFD_RELOC_UNUSED, 2, -1,
+     {
+-      AVR32_ALIAS_FMOV3_S,
+-      &avr32_opc_table[AVR32_OPC_MVRC_W],
+-      { { 0, 0 }, { 1, 0 }, { 1, 1 }, },
+-    },
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FCASTUW_S, 4, 0xE5A40000, 0xFFFFF0F0,
++    &avr32_syntax_table[AVR32_SYNTAX_FCASTUW_S],
++    BFD_RELOC_UNUSED, 2, -1,
+     {
+-      AVR32_ALIAS_FMOV3_D,
+-      &avr32_opc_table[AVR32_OPC_MVRC_D],
+-      { { 0, 0 }, { 1, 0 }, { 1, 1 }, },
+-    },
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FCMP_S, 4, 0xE5AC0000, 0xFFFFFF00,
++    &avr32_syntax_table[AVR32_SYNTAX_FCMP_S],
++    BFD_RELOC_UNUSED, 2, -1,
+     {
+-      AVR32_ALIAS_FCASTS_D,
+-      &avr32_opc_table[AVR32_OPC_COP],
+-      {
+-	{ 0, 0 },
+-	{ 1, 0 }, { 1, 1 }, { 0, 0 },
+-	{ 0, 0x0f },
+-      },
+-    },
++      &avr32_ifield_table[AVR32_IFIELD_FP_RX],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FCHK_S, 4, 0xE5AD0000, 0xFFFFFFF0,
++    &avr32_syntax_table[AVR32_SYNTAX_FCHK_S],
++    BFD_RELOC_UNUSED, 1, -1,
+     {
+-      AVR32_ALIAS_FCASTD_S,
+-      &avr32_opc_table[AVR32_OPC_COP],
+-      {
+-	{ 0, 0 },
+-	{ 1, 0 }, { 1, 1 }, { 0, 0 },
+-	{ 0, 0x10 },
+-      },
+-    },
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FRCPA_S, 4, 0xE5AE0000, 0xFFFFF0F0,
++    &avr32_syntax_table[AVR32_SYNTAX_FRCPA_S],
++    BFD_RELOC_UNUSED, 2, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  },
++  {
++    AVR32_OPC_FRSQRTA_S, 4, 0xE5AF0000, 0xFFFFF0F0,
++    &avr32_syntax_table[AVR32_SYNTAX_FRSQRTA_S],
++    BFD_RELOC_UNUSED, 2, -1,
++    {
++      &avr32_ifield_table[AVR32_IFIELD_FP_RD],
++      &avr32_ifield_table[AVR32_IFIELD_FP_RY]
++    }
++  }
++
++};
++
++
++const struct avr32_alias avr32_alias_table[] =
++  {
+     {
+       AVR32_ALIAS_PICOSVMAC0,
+       &avr32_opc_table[AVR32_OPC_COP],
+@@ -5069,29 +5125,6 @@ const struct avr32_alias avr32_alias_tab
+     }								\
+   }
+ 
+-#define SYNTAX_FP(name, nr_ops)					\
+-    {								\
+-      AVR32_SYNTAX_##name##_S,					\
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,			\
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_##name##_S] },	\
+-      NULL, nr_ops,						\
+-      {								\
+-	AVR32_OPERAND_FPREG_S,					\
+-	AVR32_OPERAND_FPREG_S,					\
+-	AVR32_OPERAND_FPREG_S,					\
+-      },							\
+-    },								\
+-    {								\
+-      AVR32_SYNTAX_##name##_D,					\
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,			\
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_##name##_D] },	\
+-      NULL, nr_ops,						\
+-      {								\
+-	AVR32_OPERAND_FPREG_D,					\
+-	AVR32_OPERAND_FPREG_D,					\
+-	AVR32_OPERAND_FPREG_D,					\
+-      },							\
+-    }
+ 
+ const struct avr32_syntax avr32_syntax_table[] =
+   {
+@@ -5535,101 +5568,26 @@ const struct avr32_syntax avr32_syntax_t
+     SYNTAX_NORMAL2(MEMC, MEMC, MEMC, SIGNED_CONST_W, UNSIGNED_NUMBER, AVR32_RMW),
+     SYNTAX_NORMAL2(MEMS, MEMS, MEMS, SIGNED_CONST_W, UNSIGNED_NUMBER, AVR32_RMW),
+     SYNTAX_NORMAL2(MEMT, MEMT, MEMT, SIGNED_CONST_W, UNSIGNED_NUMBER, AVR32_RMW),
+-    SYNTAX_FP(FADD, 3),
+-    SYNTAX_FP(FSUB, 3),
+-    SYNTAX_FP(FMAC, 3),
+-    SYNTAX_FP(FNMAC, 3),
+-    SYNTAX_FP(FMSC, 3),
+-    SYNTAX_FP(FNMSC, 3),
+-    SYNTAX_FP(FMUL, 3),
+-    SYNTAX_FP(FNMUL, 3),
+-    SYNTAX_FP(FNEG, 2),
+-    SYNTAX_FP(FABS, 2),
+-    SYNTAX_FP(FCMP, 2),
+-    {
+-      AVR32_SYNTAX_FMOV1_S,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FMOV1_S] },
+-      &avr32_syntax_table[AVR32_SYNTAX_FMOV2_S],
+-      2,
+-      {
+-	AVR32_OPERAND_FPREG_S,
+-	AVR32_OPERAND_FPREG_S,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FMOV1_D,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FMOV1_D] },
+-      &avr32_syntax_table[AVR32_SYNTAX_FMOV2_D],
+-      2,
+-      {
+-	AVR32_OPERAND_FPREG_D,
+-	AVR32_OPERAND_FPREG_D,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FMOV2_S,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FMOV2_S] },
+-      &avr32_syntax_table[AVR32_SYNTAX_FMOV3_S],
+-      2,
+-      {
+-	AVR32_OPERAND_INTREG,
+-	AVR32_OPERAND_FPREG_S,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FMOV2_D,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FMOV2_D] },
+-      &avr32_syntax_table[AVR32_SYNTAX_FMOV3_D],
+-      2,
+-      {
+-	AVR32_OPERAND_DWREG,
+-	AVR32_OPERAND_FPREG_D,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FMOV3_S,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FMOV3_S] }, NULL,
+-      2,
+-      {
+-	AVR32_OPERAND_FPREG_S,
+-	AVR32_OPERAND_INTREG,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FMOV3_D,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FMOV3_D] }, NULL,
+-      2,
+-      {
+-	AVR32_OPERAND_FPREG_D,
+-	AVR32_OPERAND_DWREG,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FCASTS_D,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FCASTS_D] }, NULL,
+-      2,
+-      {
+-	AVR32_OPERAND_FPREG_S,
+-	AVR32_OPERAND_FPREG_D,
+-      },
+-    },
+-    {
+-      AVR32_SYNTAX_FCASTD_S,
+-      AVR32_FP, NULL, AVR32_PARSER_ALIAS,
+-      { .alias = &avr32_alias_table[AVR32_ALIAS_FCASTD_S] }, NULL,
+-      2,
+-      {
+-	AVR32_OPERAND_FPREG_D,
+-	AVR32_OPERAND_FPREG_S,
+-      },
+-    },
++  SYNTAX_NORMAL4 (FMAC_S,  FMAC_S,  FMAC_S,  INTREG, INTREG, INTREG, INTREG,
++                  AVR32_V3FP),
++  SYNTAX_NORMAL4 (FNMAC_S, FNMAC_S, FNMAC_S, INTREG, INTREG, INTREG, INTREG, 
++                  AVR32_V3FP),
++  SYNTAX_NORMAL4 (FMSC_S,  FMSC_S,  FMSC_S,  INTREG, INTREG, INTREG, INTREG, 
++                  AVR32_V3FP),
++  SYNTAX_NORMAL4 (FNMSC_S, FNMSC_S, FNMSC_S, INTREG, INTREG, INTREG, INTREG, 
++                  AVR32_V3FP),
++  SYNTAX_NORMAL3 (FMUL_S,  FMUL_S,  FMUL_S,  INTREG, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL3 (FNMUL_S, FNMUL_S, FNMUL_S, INTREG, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL3 (FADD_S,  FADD_S,  FADD_S,  INTREG, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL3 (FSUB_S,  FSUB_S,  FSUB_S,  INTREG, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FCASTRS_SW, FCASTRS_SW, FCASTRS_SW, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FCASTRS_UW, FCASTRS_UW, FCASTRS_UW, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FCASTSW_S,  FCASTSW_S,  FCASTSW_S,  INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FCASTUW_S,  FCASTUW_S,  FCASTUW_S,  INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FCMP_S, FCMP_S, FCMP_S, INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL1 (FCHK_S, FCHK_S, FCHK_S, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FRCPA_S,   FRCPA_S,   FRCPA_S,   INTREG, INTREG, AVR32_V3FP),
++  SYNTAX_NORMAL2 (FRSQRTA_S, FRSQRTA_S, FRSQRTA_S, INTREG, INTREG, AVR32_V3FP),
+     {
+       AVR32_SYNTAX_LDA_W,
+       AVR32_V1, NULL, AVR32_PARSER_LDA,
+@@ -6675,20 +6633,22 @@ const struct avr32_mnemonic avr32_mnemon
+     NORMAL_MNEMONIC(MEMC, MEMC, "memc"),
+     NORMAL_MNEMONIC(MEMS, MEMS, "mems"),
+     NORMAL_MNEMONIC(MEMT, MEMT, "memt"),
+-    FP_MNEMONIC(FADD, FADD, "fadd"),
+-    FP_MNEMONIC(FSUB, FSUB, "fsub"),
+-    FP_MNEMONIC(FMAC, FMAC, "fmac"),
+-    FP_MNEMONIC(FNMAC, FNMAC, "fnmac"),
+-    FP_MNEMONIC(FMSC, FMSC, "fmsc"),
+-    FP_MNEMONIC(FNMSC, FNMSC, "fnmsc"),
+-    FP_MNEMONIC(FMUL, FMUL, "fmul"),
+-    FP_MNEMONIC(FNMUL, FNMUL, "fnmul"),
+-    FP_MNEMONIC(FNEG, FNEG, "fneg"),
+-    FP_MNEMONIC(FABS, FABS, "fabs"),
+-    FP_MNEMONIC(FCMP, FCMP, "fcmp"),
+-    FP_MNEMONIC(FMOV, FMOV1, "fmov"),
+-    NORMAL_MNEMONIC(FCASTS_D, FCASTS_D, "fcasts.d"),
+-    NORMAL_MNEMONIC(FCASTD_S, FCASTD_S, "fcastd.s"),
++  NORMAL_MNEMONIC (FMAC_S,     FMAC_S,     "fmac.s"),
++  NORMAL_MNEMONIC (FNMAC_S,    FNMAC_S,    "fnmac.s"),
++  NORMAL_MNEMONIC (FMSC_S,     FMSC_S,     "fmsc.s"), 
++  NORMAL_MNEMONIC (FNMSC_S,    FNMSC_S,    "fnmsc.s"), 
++  NORMAL_MNEMONIC (FMUL_S,     FMUL_S,     "fmul.s"),
++  NORMAL_MNEMONIC (FNMUL_S,    FNMUL_S,    "fnmul.s"),
++  NORMAL_MNEMONIC (FADD_S,     FADD_S,     "fadd.s"),
++  NORMAL_MNEMONIC (FSUB_S,     FSUB_S,     "fsub.s"),
++  NORMAL_MNEMONIC (FCASTRS_SW, FCASTRS_SW, "fcastrs.sw"),
++  NORMAL_MNEMONIC (FCASTRS_UW, FCASTRS_UW, "fcastrs.uw"),
++  NORMAL_MNEMONIC (FCASTSW_S,  FCASTSW_S,  "fcastsw.s"),
++  NORMAL_MNEMONIC (FCASTUW_S,  FCASTUW_S,  "fcastuw.s"),
++  NORMAL_MNEMONIC (FCMP_S,     FCMP_S,     "fcmp.s"),
++  NORMAL_MNEMONIC (FCHK_S,     FCHK_S,     "fchk.s"),
++  NORMAL_MNEMONIC (FRCPA_S,    FRCPA_S,    "frcpa.s"),
++  NORMAL_MNEMONIC (FRSQRTA_S,  FRSQRTA_S,  "frsqrta.s"),
+     NORMAL_MNEMONIC(LDA_W, LDA_W, "lda.w"),
+     NORMAL_MNEMONIC(CALL, CALL, "call"),
+     NORMAL_MNEMONIC(PICOSVMAC, PICOSVMAC0, "picosvmac"),
+diff -Naurp opcodes/avr32-opc.h opcodes/avr32-opc.h
+--- opcodes/avr32-opc.h	2011-11-28 12:27:22.000000000 +0530
++++ opcodes/avr32-opc.h	2011-11-28 12:27:49.000000000 +0530
+@@ -31,7 +31,7 @@
+ #define AVR32_RMW		(1 << 4)
+ #define AVR32_V2	        (1 << 5)
+ #define AVR32_V3	        (1 << 6)
+-#define AVR32_FP		(1 << 16)
++#define AVR32_V3FP	        (1 << 7)
+ #define AVR32_PICO		(1 << 17)
+ 
+ /* Registers we commonly refer to */
+@@ -178,8 +178,6 @@ enum avr32_operand_type
+   AVR32_OPERAND_MCALL,
+   AVR32_OPERAND_JOSPINC,
+   AVR32_OPERAND_COH,
+-  AVR32_OPERAND_FPREG_S,
+-  AVR32_OPERAND_FPREG_D,
+   AVR32_OPERAND_PICO_REG_W,
+   AVR32_OPERAND_PICO_REG_D,
+   AVR32_OPERAND_PICO_REGLIST_W,
+@@ -246,6 +244,10 @@ enum avr32_ifield_type
+   AVR32_IFIELD_CM_HL,
+   AVR32_IFIELD_K12CP,
+   AVR32_IFIELD_K9E,
++  AVR32_IFIELD_FP_RX,
++  AVR32_IFIELD_FP_RY,
++  AVR32_IFIELD_FP_RD,
++  AVR32_IFIELD_FP_RA,
+   AVR32_IFIELD__END_,
+ };
+ #define AVR32_NR_IFIELDS AVR32_IFIELD__END_
+@@ -901,6 +903,22 @@ enum avr32_opc_type
+   AVR32_OPC_MOVH,
+   AVR32_OPC_SSCALL,
+   AVR32_OPC_RETSS,
++  AVR32_OPC_FMAC_S,
++  AVR32_OPC_FNMAC_S,
++  AVR32_OPC_FMSC_S,
++  AVR32_OPC_FNMSC_S,
++  AVR32_OPC_FMUL_S,
++  AVR32_OPC_FNMUL_S,
++  AVR32_OPC_FADD_S,
++  AVR32_OPC_FSUB_S,
++  AVR32_OPC_FCASTRS_SW,
++  AVR32_OPC_FCASTRS_UW,
++  AVR32_OPC_FCASTSW_S,
++  AVR32_OPC_FCASTUW_S,
++  AVR32_OPC_FCMP_S,
++  AVR32_OPC_FCHK_S,
++  AVR32_OPC_FRCPA_S,
++  AVR32_OPC_FRSQRTA_S,
+   AVR32_OPC__END_
+ };
+ #define AVR32_NR_OPCODES AVR32_OPC__END_
+@@ -1347,36 +1365,22 @@ enum avr32_syntax_type
+   AVR32_SYNTAX_MEMC,
+   AVR32_SYNTAX_MEMS,
+   AVR32_SYNTAX_MEMT,
+-  AVR32_SYNTAX_FADD_S,
+-  AVR32_SYNTAX_FADD_D,
+-  AVR32_SYNTAX_FSUB_S,
+-  AVR32_SYNTAX_FSUB_D,
+   AVR32_SYNTAX_FMAC_S,
+-  AVR32_SYNTAX_FMAC_D,
+   AVR32_SYNTAX_FNMAC_S,
+-  AVR32_SYNTAX_FNMAC_D,
+   AVR32_SYNTAX_FMSC_S,
+-  AVR32_SYNTAX_FMSC_D,
+   AVR32_SYNTAX_FNMSC_S,
+-  AVR32_SYNTAX_FNMSC_D,
+   AVR32_SYNTAX_FMUL_S,
+-  AVR32_SYNTAX_FMUL_D,
+   AVR32_SYNTAX_FNMUL_S,
+-  AVR32_SYNTAX_FNMUL_D,
+-  AVR32_SYNTAX_FNEG_S,
+-  AVR32_SYNTAX_FNEG_D,
+-  AVR32_SYNTAX_FABS_S,
+-  AVR32_SYNTAX_FABS_D,
++  AVR32_SYNTAX_FADD_S,
++  AVR32_SYNTAX_FSUB_S,
++  AVR32_SYNTAX_FCASTRS_SW,
++  AVR32_SYNTAX_FCASTRS_UW,
++  AVR32_SYNTAX_FCASTSW_S,
++  AVR32_SYNTAX_FCASTUW_S,
+   AVR32_SYNTAX_FCMP_S,
+-  AVR32_SYNTAX_FCMP_D,
+-  AVR32_SYNTAX_FMOV1_S,
+-  AVR32_SYNTAX_FMOV1_D,
+-  AVR32_SYNTAX_FMOV2_S,
+-  AVR32_SYNTAX_FMOV2_D,
+-  AVR32_SYNTAX_FMOV3_S,
+-  AVR32_SYNTAX_FMOV3_D,
+-  AVR32_SYNTAX_FCASTS_D,
+-  AVR32_SYNTAX_FCASTD_S,
++  AVR32_SYNTAX_FCHK_S,
++  AVR32_SYNTAX_FRCPA_S,
++  AVR32_SYNTAX_FRSQRTA_S,
+   AVR32_SYNTAX_LDA_W,
+   AVR32_SYNTAX_CALL,
+   AVR32_SYNTAX_PICOSVMAC0,
+@@ -1678,36 +1682,6 @@ enum avr32_syntax_type
+ 
+ enum avr32_alias_type
+   {
+-    AVR32_ALIAS_FMAC_S,
+-    AVR32_ALIAS_FMAC_D,
+-    AVR32_ALIAS_FNMAC_S,
+-    AVR32_ALIAS_FNMAC_D,
+-    AVR32_ALIAS_FMSC_S,
+-    AVR32_ALIAS_FMSC_D,
+-    AVR32_ALIAS_FNMSC_S,
+-    AVR32_ALIAS_FNMSC_D,
+-    AVR32_ALIAS_FADD_S,
+-    AVR32_ALIAS_FADD_D,
+-    AVR32_ALIAS_FSUB_S,
+-    AVR32_ALIAS_FSUB_D,
+-    AVR32_ALIAS_FMUL_S,
+-    AVR32_ALIAS_FMUL_D,
+-    AVR32_ALIAS_FNMUL_S,
+-    AVR32_ALIAS_FNMUL_D,
+-    AVR32_ALIAS_FNEG_S,
+-    AVR32_ALIAS_FNEG_D,
+-    AVR32_ALIAS_FABS_S,
+-    AVR32_ALIAS_FABS_D,
+-    AVR32_ALIAS_FCMP_S,
+-    AVR32_ALIAS_FCMP_D,
+-    AVR32_ALIAS_FMOV1_S,
+-    AVR32_ALIAS_FMOV1_D,
+-    AVR32_ALIAS_FMOV2_S,
+-    AVR32_ALIAS_FMOV2_D,
+-    AVR32_ALIAS_FMOV3_S,
+-    AVR32_ALIAS_FMOV3_D,
+-    AVR32_ALIAS_FCASTS_D,
+-    AVR32_ALIAS_FCASTD_S,
+     AVR32_ALIAS_PICOSVMAC0,
+     AVR32_ALIAS_PICOSVMAC1,
+     AVR32_ALIAS_PICOSVMAC2,
+@@ -2081,32 +2055,22 @@ enum avr32_mnemonic_type
+   AVR32_MNEMONIC_MEMC,
+   AVR32_MNEMONIC_MEMS,
+   AVR32_MNEMONIC_MEMT,
+-  AVR32_MNEMONIC_FADD_S,
+-  AVR32_MNEMONIC_FADD_D,
+-  AVR32_MNEMONIC_FSUB_S,
+-  AVR32_MNEMONIC_FSUB_D,
+   AVR32_MNEMONIC_FMAC_S,
+-  AVR32_MNEMONIC_FMAC_D,
+   AVR32_MNEMONIC_FNMAC_S,
+-  AVR32_MNEMONIC_FNMAC_D,
+   AVR32_MNEMONIC_FMSC_S,
+-  AVR32_MNEMONIC_FMSC_D,
+   AVR32_MNEMONIC_FNMSC_S,
+-  AVR32_MNEMONIC_FNMSC_D,
+   AVR32_MNEMONIC_FMUL_S,
+-  AVR32_MNEMONIC_FMUL_D,
+   AVR32_MNEMONIC_FNMUL_S,
+-  AVR32_MNEMONIC_FNMUL_D,
+-  AVR32_MNEMONIC_FNEG_S,
+-  AVR32_MNEMONIC_FNEG_D,
+-  AVR32_MNEMONIC_FABS_S,
+-  AVR32_MNEMONIC_FABS_D,
++  AVR32_MNEMONIC_FADD_S,
++  AVR32_MNEMONIC_FSUB_S,
++  AVR32_MNEMONIC_FCASTRS_SW,
++  AVR32_MNEMONIC_FCASTRS_UW,
++  AVR32_MNEMONIC_FCASTSW_S,
++  AVR32_MNEMONIC_FCASTUW_S,
+   AVR32_MNEMONIC_FCMP_S,
+-  AVR32_MNEMONIC_FCMP_D,
+-  AVR32_MNEMONIC_FMOV_S,
+-  AVR32_MNEMONIC_FMOV_D,
+-  AVR32_MNEMONIC_FCASTS_D,
+-  AVR32_MNEMONIC_FCASTD_S,
++  AVR32_MNEMONIC_FCHK_S,
++  AVR32_MNEMONIC_FRCPA_S,
++  AVR32_MNEMONIC_FRSQRTA_S,
+   /* AVR32_MNEMONIC_FLD_S,
+      AVR32_MNEMONIC_FLD_D,
+      AVR32_MNEMONIC_FST_S,

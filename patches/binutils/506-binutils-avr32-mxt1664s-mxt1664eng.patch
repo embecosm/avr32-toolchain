@@ -1,0 +1,113 @@
+diff -Naurp gas/config/tc-avr32.c gas/config/tc-avr32.c
+--- gas/config/tc-avr32.c	2012-03-21 12:57:37.000000000 +0530
++++ gas/config/tc-avr32.c	2012-03-21 12:59:15.000000000 +0530
+@@ -221,6 +221,8 @@ static struct part_type_s part_types[] =
+     {"uc3l0256",      ARCH_TYPE_UCR3},
+     {"uc3l0128",      ARCH_TYPE_UCR3},
+     {"mxt768e",       ARCH_TYPE_UCR3},
++    {"mxt1664s",      ARCH_TYPE_UCR3},
++    {"mxt1664eng",    ARCH_TYPE_UCR3},
+     {"uc3l064",       ARCH_TYPE_UCR3},
+     {"uc3l032",       ARCH_TYPE_UCR3},
+     {"uc3l016",       ARCH_TYPE_UCR3},
+diff -Naurp ld/configure.tgt ld/configure.tgt
+--- ld/configure.tgt	2012-03-21 12:57:37.000000000 +0530
++++ ld/configure.tgt	2012-03-21 12:59:15.000000000 +0530
+@@ -121,7 +121,7 @@ avr-*-*)		targ_emul=avr2
+ 			targ_extra_emuls="avr1 avr25 avr3 avr31 avr35 avr4 avr5 avr51 avr6 avrxmega1 avrxmega2 avrxmega3 avrxmega4 avrxmega5 avrxmega6 avrxmega7"
+ 			;;
+ avr32-*-none)           targ_emul=avr32elf_ap7000
+-                        targ_extra_emuls="avr32elf_ap7001 avr32elf_ap7002 avr32elf_ap7200 avr32elf_uc3a0128 avr32elf_uc3a0256 avr32elf_uc3a0512 avr32elf_uc3a0512es avr32elf_uc3a1128 avr32elf_uc3a1256 avr32elf_uc3a1512es avr32elf_uc3a1512 avr32elf_uc3a364 avr32elf_uc3a364s avr32elf_uc3a3128 avr32elf_uc3a3128s avr32elf_uc3a3256 avr32elf_uc3a3256s avr32elf_uc3a464 avr32elf_uc3a464s avr32elf_uc3a4128 avr32elf_uc3a4128s avr32elf_uc3a4256 avr32elf_uc3a4256s avr32elf_uc3b064 avr32elf_uc3b0128 avr32elf_uc3b0256es avr32elf_uc3b0256 avr32elf_uc3b0512 avr32elf_uc3b0512revc avr32elf_uc3b164 avr32elf_uc3b1128 avr32elf_uc3b1256es avr32elf_uc3b1256 avr32elf_uc3b1512 avr32elf_uc3b1512revc avr32elf_uc64d3 avr32elf_uc128d3 avr32elf_uc64d4 avr32elf_uc128d4 avr32elf_uc3c0512crevc avr32elf_uc3c1512crevc avr32elf_uc3c2512crevc avr32elf_uc3l0256 avr32elf_uc3l0128 avr32elf_mxt768e avr32elf_uc3l064 avr32elf_uc3l032 avr32elf_uc3l016 avr32elf_uc3l064revb avr32elf_uc64l3u avr32elf_uc128l3u avr32elf_uc256l3u avr32elf_uc64l4u avr32elf_uc128l4u avr32elf_uc256l4u avr32elf_uc3c064c avr32elf_uc3c0128c avr32elf_uc3c0256c avr32elf_uc3c0512c avr32elf_uc3c164c avr32elf_uc3c1128c avr32elf_uc3c1256c avr32elf_uc3c1512c avr32elf_uc3c264c avr32elf_uc3c2128c avr32elf_uc3c2256c avr32elf_uc3c2512c" ;;
++                        targ_extra_emuls="avr32elf_ap7001 avr32elf_ap7002 avr32elf_ap7200 avr32elf_uc3a0128 avr32elf_uc3a0256 avr32elf_uc3a0512 avr32elf_uc3a0512es avr32elf_uc3a1128 avr32elf_uc3a1256 avr32elf_uc3a1512es avr32elf_uc3a1512 avr32elf_uc3a364 avr32elf_uc3a364s avr32elf_uc3a3128 avr32elf_uc3a3128s avr32elf_uc3a3256 avr32elf_uc3a3256s avr32elf_uc3a464 avr32elf_uc3a464s avr32elf_uc3a4128 avr32elf_uc3a4128s avr32elf_uc3a4256 avr32elf_uc3a4256s avr32elf_uc3b064 avr32elf_uc3b0128 avr32elf_uc3b0256es avr32elf_uc3b0256 avr32elf_uc3b0512 avr32elf_uc3b0512revc avr32elf_uc3b164 avr32elf_uc3b1128 avr32elf_uc3b1256es avr32elf_uc3b1256 avr32elf_uc3b1512 avr32elf_uc3b1512revc avr32elf_uc64d3 avr32elf_uc128d3 avr32elf_uc64d4 avr32elf_uc128d4 avr32elf_uc3c0512crevc avr32elf_uc3c1512crevc avr32elf_uc3c2512crevc avr32elf_uc3l0256 avr32elf_uc3l0128 avr32elf_mxt768e avr32elf_mxt1664s avr32elf_mxt1664eng avr32elf_uc3l064 avr32elf_uc3l032 avr32elf_uc3l016 avr32elf_uc3l064revb avr32elf_uc64l3u avr32elf_uc128l3u avr32elf_uc256l3u avr32elf_uc64l4u avr32elf_uc128l4u avr32elf_uc256l4u avr32elf_uc3c064c avr32elf_uc3c0128c avr32elf_uc3c0256c avr32elf_uc3c0512c avr32elf_uc3c164c avr32elf_uc3c1128c avr32elf_uc3c1256c avr32elf_uc3c1512c avr32elf_uc3c264c avr32elf_uc3c2128c avr32elf_uc3c2256c avr32elf_uc3c2512c" ;;
+ avr32-*-linux*)         targ_emul=avr32linux ;;
+ bfin-*-elf)		targ_emul=elf32bfin;
+ 			targ_extra_emuls="elf32bfinfd"
+diff -Naurp ld/emulparams/avr32elf.sh ld/emulparams/avr32elf.sh
+--- ld/emulparams/avr32elf.sh	2012-03-21 12:57:37.000000000 +0530
++++ ld/emulparams/avr32elf.sh	2012-03-21 12:59:15.000000000 +0530
+@@ -88,6 +88,56 @@ MEMORY
+ "
+       ;;
+ 
++avr32elf_mxt1664s)
++    MACHINE=uc
++    INITIAL_READONLY_SECTIONS=".reset : {  *(.reset) } >FLASH AT>FLASH"
++    TEXT_START_ADDR=0x80000000
++    OTHER_SECTIONS="
++  .userpage :  { *(.userpage .userpage.*)  } >USERPAGE AT>USERPAGE
++  .factorypage :  { *(.factorypage .factorypage.*)  } >FACTORYPAGE AT>FACTORYPAGE
++"
++        MEMORY="
++MEMORY
++{
++    FLASH (rxai!w) : ORIGIN = 0x80000000, LENGTH = 128K
++    CPUSRAM (wxa!ri) : ORIGIN = 0x00000004, LENGTH = 0x5FFC
++    USERPAGE : ORIGIN = 0x80800000, LENGTH = 256
++    FACTORYPAGE : ORIGIN = 0x80800100, LENGTH = 256
++    FLASHVAULT_FLASH_SIZE (r) : ORIGIN = 0x80800200, LENGTH = 8
++    FLASHVAULT_RAM_SIZE (r) : ORIGIN = 0x80800208, LENGTH = 8
++}
++"
++        OTHER_SECTIONS="${OTHER_SECTIONS}
++  .flashvault_flash_size : { KEEP(*(.flashvault_flash_size .flashvault_flash_size.*)) } > FLASHVAULT_FLASH_SIZE
++  .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
++"
++      ;;
++
++avr32elf_mxt1664eng)
++    MACHINE=uc
++    INITIAL_READONLY_SECTIONS=".reset : {  *(.reset) } >FLASH AT>FLASH"
++    TEXT_START_ADDR=0x80000000
++    OTHER_SECTIONS="
++  .userpage :  { *(.userpage .userpage.*)  } >USERPAGE AT>USERPAGE
++  .factorypage :  { *(.factorypage .factorypage.*)  } >FACTORYPAGE AT>FACTORYPAGE
++"
++        MEMORY="
++MEMORY
++{
++    FLASH (rxai!w) : ORIGIN = 0x80000000, LENGTH = 128K
++    CPUSRAM (wxa!ri) : ORIGIN = 0x00000004, LENGTH = 0x5FFC
++    USERPAGE : ORIGIN = 0x80800000, LENGTH = 256
++    FACTORYPAGE : ORIGIN = 0x80800100, LENGTH = 256
++    FLASHVAULT_FLASH_SIZE (r) : ORIGIN = 0x80800200, LENGTH = 8
++    FLASHVAULT_RAM_SIZE (r) : ORIGIN = 0x80800208, LENGTH = 8
++}
++"
++        OTHER_SECTIONS="${OTHER_SECTIONS}
++  .flashvault_flash_size : { KEEP(*(.flashvault_flash_size .flashvault_flash_size.*)) } > FLASHVAULT_FLASH_SIZE
++  .flashvault_ram_size   : { KEEP(*(.flashvault_ram_size .flashvault_ram_size.*)) } > FLASHVAULT_RAM_SIZE
++"
++      ;;
++
+ avr32elf_uc*)
+     MACHINE=uc
+     INITIAL_READONLY_SECTIONS=".reset : {  *(.reset) } >FLASH AT>FLASH"
+diff -Naurp ld/Makefile.am ld/Makefile.am
+--- ld/Makefile.am	2012-03-21 12:57:37.000000000 +0530
++++ ld/Makefile.am	2012-03-21 12:59:15.000000000 +0530
+@@ -217,7 +217,9 @@ ALL_EMULATION_SOURCES = \
+ 	eavr32elf_uc3c2512crevc.c \
+ 	eavr32elf_uc3l0256.c \
+ 	eavr32elf_uc3l0128.c \
+-        eavr32elf_mxt768e.c \
++	eavr32elf_mxt768e.c \
++	eavr32elf_mxt1664s.c \
++	eavr32elf_mxt1664eng.c \
+ 	eavr32elf_uc3l064.c \
+ 	eavr32elf_uc3l032.c \
+ 	eavr32elf_uc3l016.c \
+@@ -1100,6 +1102,14 @@ eavr32elf_mxt768e.c: $(srcdir)/emulparam
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} avr32elf_mxt768e "$(tdir_avr32)" avr32elf
++eavr32elf_mxt1664s.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_mxt1664s "$(tdir_avr32)" avr32elf
++eavr32elf_mxt1664eng.c: $(srcdir)/emulparams/avr32elf.sh \
++  $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
++  $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} avr32elf_mxt1664eng "$(tdir_avr32)" avr32elf
+ eavr32elf_uc3l064.c: $(srcdir)/emulparams/avr32elf.sh \
+   $(srcdir)/emultempl/elf32.em $(srcdir)/emultempl/avr32elf.em \
+   $(srcdir)/scripttempl/avr32.sc ${GEN_DEPENDS}

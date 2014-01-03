@@ -1,0 +1,33 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-03 11:44:32.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-03 11:59:09.000000000 -0600
+@@ -6615,12 +6615,23 @@
+                         continue;
+ 
+ 		      set = single_set (scan);
+-		      if (set && rtx_equal_p (src_reg, SET_DEST (set)))
+-			{
+-			  link = scan;
+-			  break;
+-			}
+-
++                      // Fix for bug #11763 : the following if condition
++                      // has been modified and else part is included to 
++                      // set the link to NULL_RTX. 
++                      // if (set && rtx_equal_p (src_reg, SET_DEST (set)))
++                      if (set && (REGNO(src_reg) == REGNO(SET_DEST(set))))
++                       {
++                         if (rtx_equal_p (src_reg, SET_DEST (set)))
++			  {
++			    link = scan;
++			    break;
++                          }
++                         else
++                          {
++                            link = NULL_RTX;
++                            break;
++                          }
++                       }
+                     }
+ 
+ 

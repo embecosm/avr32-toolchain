@@ -1,0 +1,268 @@
+diff -Naur ./gcc/config/avr32/avr32.c ./gcc/config/avr32/avr32.c
+--- ./gcc/config/avr32/avr32.c	2010-12-02 13:24:18.000000000 -0600
++++ ./gcc/config/avr32/avr32.c	2010-12-02 13:24:48.000000000 -0600
+@@ -97,56 +97,59 @@
+ /* List of all known AVR32 parts  */
+ static const struct part_type_s avr32_part_types[] = {
+   /* name, part_type, architecture type, macro */
+-  {"none",         PART_TYPE_AVR32_NONE,         ARCH_TYPE_AVR32_AP,        "__AVR32__"},
+-  {"ap7000",       PART_TYPE_AVR32_AP7000,       ARCH_TYPE_AVR32_AP,        "__AVR32_AP7000__"},
+-  {"ap7001",       PART_TYPE_AVR32_AP7001,       ARCH_TYPE_AVR32_AP,        "__AVR32_AP7001__"},
+-  {"ap7002",       PART_TYPE_AVR32_AP7002,       ARCH_TYPE_AVR32_AP,        "__AVR32_AP7002__"},
+-  {"ap7200",       PART_TYPE_AVR32_AP7200,       ARCH_TYPE_AVR32_AP,        "__AVR32_AP7200__"},
+-  {"uc3a0128",     PART_TYPE_AVR32_UC3A0128,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A0128__"},
+-  {"uc3a0256",     PART_TYPE_AVR32_UC3A0256,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A0256__"},
+-  {"uc3a0512",     PART_TYPE_AVR32_UC3A0512,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A0512__"},
+-  {"uc3a0512es",   PART_TYPE_AVR32_UC3A0512ES,   ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3A0512ES__"},
+-  {"uc3a1128",     PART_TYPE_AVR32_UC3A1128,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A1128__"},
+-  {"uc3a1256",     PART_TYPE_AVR32_UC3A1256,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A1256__"},
+-  {"uc3a1512",     PART_TYPE_AVR32_UC3A1512,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A1512__"},
+-  {"uc3a1512es",   PART_TYPE_AVR32_UC3A1512ES,   ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3A1512ES__"},
+-  {"uc3a3revd",    PART_TYPE_AVR32_UC3A3REVD,    ARCH_TYPE_AVR32_UCR2NOMUL, "__AVR32_UC3A3256S__"},
+-  {"uc3a364",      PART_TYPE_AVR32_UC3A364,      ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A364__"},
+-  {"uc3a364s",     PART_TYPE_AVR32_UC3A364S,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A364S__"},
+-  {"uc3a3128",     PART_TYPE_AVR32_UC3A3128,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3128__"},
+-  {"uc3a3128s",    PART_TYPE_AVR32_UC3A3128S,    ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3128S__"},
+-  {"uc3a3256",     PART_TYPE_AVR32_UC3A3256,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3256__"},
+-  {"uc3a3256s",    PART_TYPE_AVR32_UC3A3256S,    ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3256S__"},
+-  {"uc3b064",      PART_TYPE_AVR32_UC3B064,      ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B064__"},
+-  {"uc3b0128",     PART_TYPE_AVR32_UC3B0128,     ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0128__"},
+-  {"uc3b0256",     PART_TYPE_AVR32_UC3B0256,     ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0256__"},
+-  {"uc3b0256es",   PART_TYPE_AVR32_UC3B0256ES,   ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0256ES__"},
+-  {"uc3b0512",     PART_TYPE_AVR32_UC3B0512,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B0512__"},
+-  {"uc3b0512revc", PART_TYPE_AVR32_UC3B0512REVC, ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B0512REVC__"},
+-  {"uc3b164",      PART_TYPE_AVR32_UC3B164,      ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B164__"},
+-  {"uc3b1128",     PART_TYPE_AVR32_UC3B1128,     ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B1128__"},
+-  {"uc3b1256",     PART_TYPE_AVR32_UC3B1256,     ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B1256__"},
+-  {"uc3b1256es",   PART_TYPE_AVR32_UC3B1256ES,   ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B1256ES__"},
+-  {"uc3b1512",     PART_TYPE_AVR32_UC3B1512,     ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B1512__"},
+-  {"uc3b1512revc", PART_TYPE_AVR32_UC3B1512REVC, ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B1512REVC__"},
+-  {"uc3c0512crevc",PART_TYPE_AVR32_UC3C0512C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C0512CREVC__"},
+-  {"uc3c0256c",    PART_TYPE_AVR32_UC3C0256C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C0256C__"},
+-  {"uc3c0128c",    PART_TYPE_AVR32_UC3C0128C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C0128C__"},
+-  {"uc3c064c",     PART_TYPE_AVR32_UC3C064C,     ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C064C__"},
+-  {"uc3c1512crevc",PART_TYPE_AVR32_UC3C1512C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C1512CREVC__"},
+-  {"uc3c1256c",    PART_TYPE_AVR32_UC3C1256C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C1256C__"},
+-  {"uc3c1128c",    PART_TYPE_AVR32_UC3C1128C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C1128C__"},
+-  {"uc3c164c",     PART_TYPE_AVR32_UC3C164C,     ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C164C__"},
+-  {"uc3c2512crevc",PART_TYPE_AVR32_UC3C2512C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C2512CREVC__"},
+-  {"uc3c2256c",    PART_TYPE_AVR32_UC3C2256C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C2256C__"},
+-  {"uc3c2128c",    PART_TYPE_AVR32_UC3C2128C,    ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C2128C__"},
+-  {"uc3c264c",     PART_TYPE_AVR32_UC3C264C,     ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C264C__"},
+-  {"uc3l0256",     PART_TYPE_AVR32_UC3L0256,     ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L0256__"},
+-  {"uc3l064",      PART_TYPE_AVR32_UC3L064,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064__"},
+-  {"uc3l032",      PART_TYPE_AVR32_UC3L032,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L032__"},
+-  {"uc3l016",      PART_TYPE_AVR32_UC3L016,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L016__"},
+-  {"uc3l064revb",  PART_TYPE_AVR32_UC3L064,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064REVB__"},
+-  {"mxt768e",      PART_TYPE_AVR32_MXT768E,      ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT768E__"},
++  {"none",            PART_TYPE_AVR32_NONE,            ARCH_TYPE_AVR32_AP,        "__AVR32__"},
++  {"ap7000",          PART_TYPE_AVR32_AP7000,          ARCH_TYPE_AVR32_AP,        "__AVR32_AP7000__"},
++  {"ap7001",          PART_TYPE_AVR32_AP7001,          ARCH_TYPE_AVR32_AP,        "__AVR32_AP7001__"},
++  {"ap7002",          PART_TYPE_AVR32_AP7002,          ARCH_TYPE_AVR32_AP,        "__AVR32_AP7002__"},
++  {"ap7200",          PART_TYPE_AVR32_AP7200,          ARCH_TYPE_AVR32_AP,        "__AVR32_AP7200__"},
++  {"uc3a0128",        PART_TYPE_AVR32_UC3A0128,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A0128__"},
++  {"uc3a0256",        PART_TYPE_AVR32_UC3A0256,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A0256__"},
++  {"uc3a0512",        PART_TYPE_AVR32_UC3A0512,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A0512__"},
++  {"uc3a0512es",      PART_TYPE_AVR32_UC3A0512ES,      ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3A0512ES__"},
++  {"uc3a1128",        PART_TYPE_AVR32_UC3A1128,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A1128__"},
++  {"uc3a1256",        PART_TYPE_AVR32_UC3A1256,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A1256__"},
++  {"uc3a1512",        PART_TYPE_AVR32_UC3A1512,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A1512__"},
++  {"uc3a1512es",      PART_TYPE_AVR32_UC3A1512ES,      ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3A1512ES__"},
++  {"uc3a3revd",       PART_TYPE_AVR32_UC3A3REVD,       ARCH_TYPE_AVR32_UCR2NOMUL, "__AVR32_UC3A3256S__"},
++  {"uc3a364",         PART_TYPE_AVR32_UC3A364,         ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A364__"},
++  {"uc3a364s",        PART_TYPE_AVR32_UC3A364S,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A364S__"},
++  {"uc3a3128",        PART_TYPE_AVR32_UC3A3128,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3128__"},
++  {"uc3a3128s",       PART_TYPE_AVR32_UC3A3128S,       ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3128S__"},
++  {"uc3a3256",        PART_TYPE_AVR32_UC3A3256,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3256__"},
++  {"uc3a3256s",       PART_TYPE_AVR32_UC3A3256S,       ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3A3256S__"},
++  {"uc3b064",         PART_TYPE_AVR32_UC3B064,         ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B064__"},
++  {"uc3b0128",        PART_TYPE_AVR32_UC3B0128,        ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0128__"},
++  {"uc3b0256",        PART_TYPE_AVR32_UC3B0256,        ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0256__"},
++  {"uc3b0256es",      PART_TYPE_AVR32_UC3B0256ES,      ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B0256ES__"},
++  {"uc3b0512",        PART_TYPE_AVR32_UC3B0512,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B0512__"},
++  {"uc3b0512revc",    PART_TYPE_AVR32_UC3B0512REVC,    ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B0512REVC__"},
++  {"uc3b164",         PART_TYPE_AVR32_UC3B164,         ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B164__"},
++  {"uc3b1128",        PART_TYPE_AVR32_UC3B1128,        ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B1128__"},
++  {"uc3b1256",        PART_TYPE_AVR32_UC3B1256,        ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B1256__"},
++  {"uc3b1256es",      PART_TYPE_AVR32_UC3B1256ES,      ARCH_TYPE_AVR32_UCR1,      "__AVR32_UC3B1256ES__"},
++  {"uc3b1512",        PART_TYPE_AVR32_UC3B1512,        ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B1512__"},
++  {"uc3b1512revc",    PART_TYPE_AVR32_UC3B1512REVC,    ARCH_TYPE_AVR32_UCR2,      "__AVR32_UC3B1512REVC__"},
++  {"uc3c0512crevc",   PART_TYPE_AVR32_UC3C0512CREVC,   ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C0512CREVC__"},
++  {"uc3c1512crevc",   PART_TYPE_AVR32_UC3C1512CREVC,   ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C1512CREVC__"},
++  {"uc3c2512crevc",   PART_TYPE_AVR32_UC3C2512CREVC,   ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3C2512CREVC__"},
++  {"uc3l0256",        PART_TYPE_AVR32_UC3L0256,        ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L0256__"},
++  {"uc3l064",         PART_TYPE_AVR32_UC3L064,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064__"},
++  {"uc3l032",         PART_TYPE_AVR32_UC3L032,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L032__"},
++  {"uc3l016",         PART_TYPE_AVR32_UC3L016,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L016__"},
++  {"uc3l064revb",     PART_TYPE_AVR32_UC3L064,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_UC3L064REVB__"},
++  {"uc3c064c",        PART_TYPE_AVR32_UC3C064C,        ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C064C__"},
++  {"uc3c0128c",       PART_TYPE_AVR32_UC3C0128C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C0128C__"},
++  {"uc3c0256c",       PART_TYPE_AVR32_UC3C0256C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C0256C__"},
++  {"uc3c0512c",       PART_TYPE_AVR32_UC3C0512C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C0512C__"},
++  {"uc3c164c",        PART_TYPE_AVR32_UC3C164C,        ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C164C__"},
++  {"uc3c1128c",       PART_TYPE_AVR32_UC3C1128C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C1128C__"},
++  {"uc3c1256c",       PART_TYPE_AVR32_UC3C1256C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C1256C__"},
++  {"uc3c1512c",       PART_TYPE_AVR32_UC3C1512C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C1512C__"},
++  {"uc3c264c",        PART_TYPE_AVR32_UC3C264C,        ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C264C__"},
++  {"uc3c2128c",       PART_TYPE_AVR32_UC3C2128C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C2128C__"},
++  {"uc3c2256c",       PART_TYPE_AVR32_UC3C2256C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C2256C__"},
++  {"uc3c2512c",       PART_TYPE_AVR32_UC3C2512C,       ARCH_TYPE_AVR32_UCR3FP,    "__AVR32_UC3C2512C__"},
++  {"mxt768e",         PART_TYPE_AVR32_MXT768E,         ARCH_TYPE_AVR32_UCR3,      "__AVR32_MXT768E__"},
+   {NULL, 0, 0, NULL}
+ };
+ 
+diff -Naur ./gcc/config/avr32/avr32.h ./gcc/config/avr32/avr32.h
+--- ./gcc/config/avr32/avr32.h	2010-12-02 13:24:18.000000000 -0600
++++ ./gcc/config/avr32/avr32.h	2010-12-02 13:24:48.000000000 -0600
+@@ -182,22 +182,25 @@
+   PART_TYPE_AVR32_UC3B1256ES,
+   PART_TYPE_AVR32_UC3B1512,
+   PART_TYPE_AVR32_UC3B1512REVC,
+-  PART_TYPE_AVR32_UC3C0512C,
+-  PART_TYPE_AVR32_UC3C0256C,
+-  PART_TYPE_AVR32_UC3C0128C,
+-  PART_TYPE_AVR32_UC3C064C,
+-  PART_TYPE_AVR32_UC3C1512C,
+-  PART_TYPE_AVR32_UC3C1256C,
+-  PART_TYPE_AVR32_UC3C1128C,
+-  PART_TYPE_AVR32_UC3C164C,
+-  PART_TYPE_AVR32_UC3C2512C,
+-  PART_TYPE_AVR32_UC3C2256C,
+-  PART_TYPE_AVR32_UC3C2128C,
+-  PART_TYPE_AVR32_UC3C264C,
++  PART_TYPE_AVR32_UC3C0512CREVC,
++  PART_TYPE_AVR32_UC3C1512CREVC,
++  PART_TYPE_AVR32_UC3C2512CREVC,
+   PART_TYPE_AVR32_UC3L0256,
+   PART_TYPE_AVR32_UC3L064,
+   PART_TYPE_AVR32_UC3L032,
+   PART_TYPE_AVR32_UC3L016,
++  PART_TYPE_AVR32_UC3C064C,
++  PART_TYPE_AVR32_UC3C0128C,
++  PART_TYPE_AVR32_UC3C0256C,
++  PART_TYPE_AVR32_UC3C0512C,
++  PART_TYPE_AVR32_UC3C164C,
++  PART_TYPE_AVR32_UC3C1128C,
++  PART_TYPE_AVR32_UC3C1256C,
++  PART_TYPE_AVR32_UC3C1512C,
++  PART_TYPE_AVR32_UC3C264C,
++  PART_TYPE_AVR32_UC3C2128C,
++  PART_TYPE_AVR32_UC3C2256C,
++  PART_TYPE_AVR32_UC3C2512C,
+   PART_TYPE_AVR32_MXT768E
+ };
+ 
+diff -Naur ./gcc/config/avr32/t-avr32 ./gcc/config/avr32/t-avr32
+--- ./gcc/config/avr32/t-avr32	2010-12-02 13:24:18.000000000 -0600
++++ ./gcc/config/avr32/t-avr32	2010-12-02 13:24:48.000000000 -0600
+@@ -59,22 +59,25 @@
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3b1512
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3b1512revc
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c0512crevc
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c0256c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c0128c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c064c
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1512crevc
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1256c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1128c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c164c
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2512crevc
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2256c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2128c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c264c
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l0256
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064revb
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c064c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0128c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0256c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0512c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c164c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c1128c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c1256c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c1512c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c264c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2128c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2256c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2512c
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt768e
+ 
+ 
+diff -Naur ./gcc/config/avr32/t-avr32-linux ./gcc/config/avr32/t-avr32-linux
+--- ./gcc/config/avr32/t-avr32-linux	2010-12-02 13:24:18.000000000 -0600
++++ ./gcc/config/avr32/t-avr32-linux	2010-12-02 13:24:48.000000000 -0600
+@@ -59,22 +59,25 @@
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3b1512
+ MULTILIB_MATCHES     += march?ucr2=mpart?uc3b1512revc
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c0512crevc
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c0256c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c0128c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c064c
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1512crevc
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1256c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c1128c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c164c
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2512crevc
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2256c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c2128c
+-MULTILIB_MATCHES     += march?ucr3=mpart?uc3c264c
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l0256
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l032
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l016
+ MULTILIB_MATCHES     += march?ucr3=mpart?uc3l064revb
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c064c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0128c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0256c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c0512c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c164c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c1128c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c1256c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c1512c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c264c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2128c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2256c
++MULTILIB_MATCHES     += march?ucr3fp=mpart?uc3c2512c
+ MULTILIB_MATCHES     += march?ucr3=mpart?mxt768e
+ 
+ 
+diff -Naur ./gcc/doc/invoke.texi ./gcc/doc/invoke.texi
+--- ./gcc/doc/invoke.texi	2010-12-02 13:24:18.000000000 -0600
++++ ./gcc/doc/invoke.texi	2010-12-02 13:24:48.000000000 -0600
+@@ -9414,22 +9414,25 @@
+ @samp{uc3b1512}
+ @samp{uc3b1512revc}
+ @samp{uc3c0512crevc},
+-@samp{uc3c0256c},
+-@samp{uc3c0128c},
+-@samp{uc3c064c},
+ @samp{uc3c1512crevc},
+-@samp{uc3c1256c},
+-@samp{uc3c1128c},
+-@samp{uc3c164c},
+ @samp{uc3c2512crevc},
+-@samp{uc3c2256c},
+-@samp{uc3c2128c},
+-@samp{uc3c264c},
+ @samp{uc3l0256},
+ @samp{uc3l064},
+ @samp{uc3l032},
+ @samp{uc3l016},
+ @samp{uc3l064revb},
++@samp{uc3c064c},
++@samp{uc3c0128c},
++@samp{uc3c0256c},
++@samp{uc3c0512c},
++@samp{uc3c164c},
++@samp{uc3c1128c},
++@samp{uc3c1256c},
++@samp{uc3c1512c},
++@samp{uc3c264c},
++@samp{uc3c2128c},
++@samp{uc3c2256c},
++@samp{uc3c2512c},
+ @samp{mxt768e}.
+ 
+ @item -mcpu=@var{cpu-type}

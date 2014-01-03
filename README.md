@@ -67,3 +67,7 @@ The standard Atmel download is provided as patch files against the standard
 GNU tool chain distributions. `SOURCES.README` describes these files,
 `build-avr32-gnu-toolchain.sh` is the script to build from these sources. The
 patch files themselves may be found in the patches directory.
+
+The script `patchbuild.sh` is used to apply the patches as git commits,
+creating appropriate ChangeLog.AVR32 entries. The git repository includes all
+these commits.
