@@ -1,3 +1,10 @@
+2014-02-04  Jeremy Bennett  <jeremy.bennett@embecosm.com>
+
+	* avr32-clone-all.sh: Created.
+	* build-all.sh: Added options --explicit-libppl and
+	--no-parallel-gcc to control building for different environments.
+	* README.md: Updated with miscellaneous corrections.
+
 2014-02-03  Jeremy Bennett  <jeremy.bennett@embecosm.com>
 
 	* .gitignore: Created.

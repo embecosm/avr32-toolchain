@@ -31,6 +31,8 @@
 #                  [--auto-pull | --no-auto-pull]
 #                  [--auto-checkout | --no-auto-checkout]
 #                  [--datestamp-install]
+#                  [--explicit-libppl]
+#                  [--no-parallel-gcc]
 #                  [--jobs <count>] [--load <load>] [--single-thread]
 
 # This script builds the AVR 32-bit tool chain as held in git. It is assumed
@@ -84,6 +86,17 @@
 #     directory name. (see the comments under --symlink-dir above for reasons
 #     why this might be useful).
 
+# --explicit-libppl
+
+#     Some build environments require libppl_c to be explicitly provided in
+#     LDFLAGS (e.g. recent Fedora builds). If so specify this option.
+
+# --no-parallel-gcc
+
+#     GCC parallel build may not work reliably (seems to be the case with
+#     Debian envrionments such as Ubuntu). If so, specify this option to build
+#     sequentially.
+
 # --jobs <count>
 
 #     Specify that parallel make should run at most <count> jobs. The default
@@ -132,6 +145,8 @@ make_load="`(echo processor; cat /proc/cpuinfo 2>/dev/null) \
            | grep -c processor`"
 jobs=${make_load}
 load=${make_load}
+libppl=""
+no_parallel_gcc_p="false"
 
 # Parse options
 until
@@ -159,6 +174,14 @@ case ${opt} in
 	datestamp=-`date -u +%F-%H%M`
 	;;
 
+    --explicit-libppl)
+	libppl="LDFLAGS+=-lppl_c"
+	;;
+
+    --no-parallel-gcc)
+	no_parallel_gcc_p="true"
+	;;
+
     --jobs)
 	shift
 	jobs=$1
@@ -182,6 +205,8 @@ case ${opt} in
 	echo "                      [--auto-checkout | --no-auto-checkout]"
         echo "                      [--auto-pull | --no-auto-pull]"
 	echo "                      [--datestamp-install]"
+        echo "                      [--explicit-libppl]"
+        echo "                      [--no-parallel-gcc]"
         echo "                      [--jobs <count>] [--load <load>]"
         echo "                      [--single-thread]"
 	exit 1
@@ -201,6 +226,13 @@ then
 fi
 
 parallel="-j ${jobs} -l ${load}"
+
+if [ "x${no_parallel_gcc_p}" = "xtrue" ]
+then
+    parallel_gcc=""
+else
+    parallel_gcc="$parallel"
+fi
 
 # Make sure we stop if something failed.
 trap "echo ERROR: Failed due to signal ; date ; exit 1" \
@@ -350,10 +382,9 @@ echo "========================" >> "${logfile}"
 
 echo "Building gcc (bootstrap) ..."
 
-# Build. There seems to be an issue with GCC 4.4 and Graphite if the PPL
-# library is not explicitly placed on the command line.
+# Build.
 cd "${bd_gcc_bs}"
-if make LDFLAGS+=-lppl_c ${parallel} all-build all-gcc \
+if make ${libppl} ${parallel_gcc} all-build all-gcc \
         all-target-libgcc >> "${logfile}" 2>&1
 then
     echo "  finished building gcc (bootstrap)"
@@ -481,9 +512,9 @@ echo "===================" >> "${logfile}"
 
 echo "Building gcc (full) ..."
 
-# Build. Once again with explicit PPL library (see above)
+# Build.
 cd "${bd_gcc}"
-if make LDFLAGS+=-lppl_c  ${parallel} all-build all-gcc all-target-libgcc \
+if make ${libppl} ${parallel_gcc} all-build all-gcc all-target-libgcc \
         all-target-libstdc++-v3 >> "${logfile}" 2>&1
 then
     echo "  finished building gcc (full)"

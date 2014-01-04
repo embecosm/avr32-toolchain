@@ -21,23 +21,24 @@ You will need the standard GNU tool chain pre-requisites as documented in
 Finally you will need to check out the repositories for each of the tool chain
 components (its not all one big repository). These should be peers of this
 toolchain directory. If you have yet to check any repository out, then the
-following should be appropriate for creating a new directory, `avr` with all
+following should be appropriate for creating a new directory, `avr32` with all
 the components.
 
-    mkdir avr
-    cd avr
+    mkdir avr32
+    cd avr32
     git clone git@github.com:embecosm/avr32-binutils-gdb.git binutils
     git clone git@github.com:embecosm/avr32-gcc.git gcc
-    git clone git@github.com:embecosm/avr32-binutils-gdb.git gdb
     git clone git@github.com:embecosm/avr32-newlib.git newlib
     git clone git@github.com:embecosm/avr32-toolchain.git toolchain
+    cp -rd binutils gdb
     cd toolchain
 
-__Note.__ The avr-binutils-gdb repository is cloned twice, to allow us
-potentially to build tool chains with different versions of binutils and GDB.
+__Note.__ The avr32-binutils-gdb repository is needed twice, to allow us
+potentially to build tool chains with different versions (i.e. branches) of
+binutils and GDB.
 
 For convenience, clone just the toolcahin repository, then run the script
-[avr-clone-all.sh](https://github.com/embecosm/avr-toolchain/blob/avr-toolchain-mainline/avr-clone-all.sh)
+[avr32-clone-all.sh](https://github.com/embecosm/avr32-toolchain/blob/avr32-toolchain-mainline/avr32-clone-all.sh)
 in the toolchain directory, which will do the cloning for you:
 
     mkdir avr32
@@ -48,7 +49,7 @@ in the toolchain directory, which will do the cloning for you:
 
 ## Building the tool chain
 
-The script `build-all.sh` will build and install AVR tool chains and AVR LibC. Use
+The script `build-all.sh` will build and install the AVR 32-bit tool chain. Use:
 
     ./build-all.sh --help
 
